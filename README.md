@@ -1,10 +1,10 @@
-# Playlist Agent
+# Program Director
 
-AI-powered playlist generator for ErsatzTV using LangChain and Ollama.
+AI-powered TV channel programmer for ErsatzTV using LangChain and Ollama.
 
 ## Overview
 
-Playlist Agent generates themed Smart Collections in ErsatzTV by:
+Program Director generates themed Smart Collections in ErsatzTV by:
 1. Querying Radarr and Sonarr for available media with full metadata
 2. Using an LLM (Ollama) to intelligently select content matching a theme
 3. Creating Smart Collections in ErsatzTV for the curated content
@@ -28,7 +28,7 @@ pip install .
 ### Using Docker
 
 ```bash
-docker pull ghcr.io/geekxflood/playlist-agent:latest
+docker pull ghcr.io/geekxflood/program-director:latest
 ```
 
 ## Configuration
@@ -38,7 +38,7 @@ docker pull ghcr.io/geekxflood/playlist-agent:latest
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `OLLAMA_URL` | Ollama API URL | Yes |
-| `OLLAMA_MODEL` | Ollama model name (default: llama3:8b) | No |
+| `OLLAMA_MODEL` | Ollama model name (default: dolphin-llama3:8b) | No |
 | `ERSATZTV_URL` | ErsatzTV API URL | Yes |
 | `RADARR_URL` | Radarr API URL | Yes |
 | `RADARR_API_KEY` | Radarr API key | Yes |
@@ -52,7 +52,7 @@ Create a `config.yaml`:
 ```yaml
 ollama:
   url: "http://localhost:11434"
-  model: "llama3:8b"
+  model: "dolphin-llama3:8b"
 
 ersatztv:
   url: "http://localhost:8409"
@@ -88,19 +88,19 @@ themes:
 
 ```bash
 # Generate playlist for a specific theme
-playlist-agent generate --theme sci-fi-night
+program-director generate --theme sci-fi-night
 
 # Generate playlists for all themes
-playlist-agent generate --all-themes
+program-director generate --all-themes
 
 # Dry run (preview without applying)
-playlist-agent generate --theme sci-fi-night --dry-run
+program-director generate --theme sci-fi-night --dry-run
 
 # Scan media library
-playlist-agent scan
+program-director scan
 
 # List configured themes
-playlist-agent themes
+program-director themes
 ```
 
 ### Docker Usage
@@ -114,16 +114,16 @@ docker run --rm \
   -e RADARR_URL=http://radarr:7878 \
   -e SONARR_URL=http://sonarr:8989 \
   -v /path/to/config.yaml:/app/config/config.yaml \
-  ghcr.io/geekxflood/playlist-agent:latest \
-  python -m playlist_agent.cli generate --all-themes
+  ghcr.io/geekxflood/program-director:latest \
+  python -m program_director.cli generate --all-themes
 ```
 
 ## Architecture
 
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│   Radarr    │────▶│  Playlist   │────▶│  ErsatzTV   │
-│   (Movies)  │     │    Agent    │     │  (Smart     │
+│   Radarr    │────▶│  Program    │────▶│  ErsatzTV   │
+│   (Movies)  │     │  Director   │     │  (Smart     │
 └─────────────┘     │             │     │ Collections)│
                     │  LangChain  │     └─────────────┘
 ┌─────────────┐     │      +      │
@@ -150,7 +150,7 @@ pip install -e ".[dev]"
 ```bash
 ruff check .
 ruff format .
-mypy playlist_agent/
+mypy program_director/
 ```
 
 ### Testing

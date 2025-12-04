@@ -1,4 +1,4 @@
-"""Command-line interface for the Playlist Agent."""
+"""Command-line interface for Program Director."""
 
 from pathlib import Path
 
@@ -10,8 +10,8 @@ from .agent import PlaylistAgent
 from .config import load_config
 
 app = typer.Typer(
-    name="playlist-agent",
-    help="AI-powered playlist generator for ErsatzTV using Radarr/Sonarr metadata",
+    name="program-director",
+    help="AI-powered TV channel programmer for ErsatzTV using Radarr/Sonarr metadata",
 )
 console = Console()
 

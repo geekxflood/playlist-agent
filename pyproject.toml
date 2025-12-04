@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "playlist-agent"
+name = "program-director"
 version = "1.0.0"
-description = "AI-powered playlist generator for ErsatzTV using LangChain and Ollama"
+description = "AI-powered TV channel programmer for ErsatzTV using LangChain and Ollama"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 authors = [
     { name = "geekxflood" }
 ]
-keywords = ["ersatztv", "playlist", "ai", "langchain", "ollama", "radarr", "sonarr"]
+keywords = ["ersatztv", "playlist", "ai", "langchain", "ollama", "radarr", "sonarr", "iptv"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
@@ -40,15 +40,15 @@ dev = [
 ]
 
 [project.scripts]
-playlist-agent = "playlist_agent.cli:app"
+program-director = "program_director.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/geekxflood/playlist-agent"
-Repository = "https://github.com/geekxflood/playlist-agent"
-Issues = "https://github.com/geekxflood/playlist-agent/issues"
+Homepage = "https://github.com/geekxflood/program-director"
+Repository = "https://github.com/geekxflood/program-director"
+Issues = "https://github.com/geekxflood/program-director/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["playlist_agent"]
+packages = ["program_director"]
 
 [tool.ruff]
 line-length = 100
