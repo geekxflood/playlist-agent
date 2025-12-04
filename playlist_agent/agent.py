@@ -64,6 +64,7 @@ IMPORTANT:
             base_url=config.ollama.url,
             model=config.ollama.model,
             temperature=0.7,
+            num_ctx=8192,  # Increase context window to fit media library summary
         )
         self.library = MediaLibrary(
             radarr_url=config.radarr.url,
