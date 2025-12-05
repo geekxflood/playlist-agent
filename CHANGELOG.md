@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+### Security
+
+## [1.0.1] - 2025-12-05
+
+### Added
 - Unit tests for Trakt client (34.5% coverage)
 - Unit tests for scheduler (42.6% coverage)
 - Unit tests for HTTP server handlers (5.9% coverage)
@@ -15,10 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Minimum Go version updated to 1.23
 - Updated CLAUDE.md with comprehensive documentation for all v1.0.0 features
+- Updated Dockerfile to use Go 1.23 base image
 
 ### Fixed
-
-### Security
+- Fixed SQLite BIGINT to INTEGER conversion for modernc.org/sqlite compatibility
+- Fixed AUTOINCREMENT constraint errors in database migrations
+- Fixed Helm chart storage class configuration for Kubernetes (local-path instead of standard)
+- Added initContainer to fix volume permissions for SQLite database
+- Temporarily disabled readOnlyRootFilesystem in staging for SQLite compatibility debugging
 
 ## [1.0.0] - 2025-12-05
 
@@ -181,5 +195,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Previous Python-based versions are no longer maintained. See git history for details.
 
-[Unreleased]: https://github.com/geekxflood/program-director/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/geekxflood/program-director/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/geekxflood/program-director/releases/tag/v1.0.1
 [1.0.0]: https://github.com/geekxflood/program-director/releases/tag/v1.0.0
