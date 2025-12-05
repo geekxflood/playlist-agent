@@ -16,6 +16,7 @@ type Config struct {
 	Radarr   RadarrConfig   `mapstructure:"radarr"`
 	Sonarr   SonarrConfig   `mapstructure:"sonarr"`
 	Tunarr   TunarrConfig   `mapstructure:"tunarr"`
+	Trakt    TraktConfig    `mapstructure:"trakt"`
 	Ollama   OllamaConfig   `mapstructure:"ollama"`
 	Cooldown CooldownConfig `mapstructure:"cooldown"`
 	Server   ServerConfig   `mapstructure:"server"`
@@ -59,6 +60,12 @@ type SonarrConfig struct {
 // TunarrConfig holds Tunarr API settings
 type TunarrConfig struct {
 	URL string `mapstructure:"url"`
+}
+
+// TraktConfig holds Trakt.tv API settings
+type TraktConfig struct {
+	ClientID     string `mapstructure:"client_id"`
+	ClientSecret string `mapstructure:"client_secret"`
 }
 
 // OllamaConfig holds Ollama LLM settings
@@ -170,6 +177,8 @@ func setDefaults(v *viper.Viper) {
 	// Tunarr defaults
 	v.SetDefault("tunarr.url", "http://tunarr:8000")
 
+	// Trakt defaults (optional, no defaults needed)
+
 	// Ollama defaults
 	v.SetDefault("ollama.url", "http://ollama:11434")
 	v.SetDefault("ollama.model", "dolphin-llama3:8b")
@@ -196,6 +205,8 @@ func bindEnvVars(v *viper.Viper) {
 	v.BindEnv("radarr.url", "RADARR_URL")
 	v.BindEnv("sonarr.url", "SONARR_URL")
 	v.BindEnv("tunarr.url", "TUNARR_URL")
+	v.BindEnv("trakt.client_id", "TRAKT_CLIENT_ID")
+	v.BindEnv("trakt.client_secret", "TRAKT_CLIENT_SECRET")
 	v.BindEnv("ollama.url", "OLLAMA_URL")
 	v.BindEnv("ollama.model", "OLLAMA_MODEL")
 	v.BindEnv("database.driver", "DB_DRIVER")

@@ -70,6 +70,7 @@ func init() {
 	rootCmd.AddCommand(syncCmd)
 	rootCmd.AddCommand(scanCmd)
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(traktCmd)
 }
 
 func initConfig() error {
