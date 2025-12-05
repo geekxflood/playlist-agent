@@ -5,6 +5,7 @@ AI-powered TV channel programmer for ErsatzTV using LangChain and Ollama.
 ## Overview
 
 Program Director generates themed Smart Collections in ErsatzTV by:
+
 1. Querying Radarr and Sonarr for available media with full metadata
 2. Using an LLM (Ollama) to intelligently select content matching a theme
 3. Creating Smart Collections in ErsatzTV for the curated content
@@ -35,15 +36,15 @@ docker pull ghcr.io/geekxflood/program-director:latest
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OLLAMA_URL` | Ollama API URL | Yes |
-| `OLLAMA_MODEL` | Ollama model name (default: dolphin-llama3:8b) | No |
-| `ERSATZTV_URL` | ErsatzTV API URL | Yes |
-| `RADARR_URL` | Radarr API URL | Yes |
-| `RADARR_API_KEY` | Radarr API key | Yes |
-| `SONARR_URL` | Sonarr API URL | Yes |
-| `SONARR_API_KEY` | Sonarr API key | Yes |
+| Variable         | Description                                    | Required |
+| ---------------- | ---------------------------------------------- | -------- |
+| `OLLAMA_URL`     | Ollama API URL                                 | Yes      |
+| `OLLAMA_MODEL`   | Ollama model name (default: dolphin-llama3:8b) | No       |
+| `ERSATZTV_URL`   | ErsatzTV API URL                               | Yes      |
+| `RADARR_URL`     | Radarr API URL                                 | Yes      |
+| `RADARR_API_KEY` | Radarr API key                                 | Yes      |
+| `SONARR_URL`     | Sonarr API URL                                 | Yes      |
+| `SONARR_API_KEY` | Sonarr API key                                 | Yes      |
 
 ### Config File
 
@@ -120,7 +121,7 @@ docker run --rm \
 
 ## Architecture
 
-```
+```txt
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │   Radarr    │────▶│  Program    │────▶│  ErsatzTV   │
 │   (Movies)  │     │  Director   │     │  (Smart     │
