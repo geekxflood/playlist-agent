@@ -126,8 +126,12 @@ func adaptSQL(sql string, driver string) string {
 		sql = strings.ReplaceAll(sql, "jsonb", "TEXT")
 
 		// Convert SERIAL to INTEGER for SQLite (auto-increment is implicit)
-		sql = strings.ReplaceAll(sql, "SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT")
+		// IMPORTANT: Do BIGSERIAL before SERIAL to avoid partial replacements
 		sql = strings.ReplaceAll(sql, "BIGSERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT")
+		sql = strings.ReplaceAll(sql, "SERIAL PRIMARY KEY", "INTEGER PRIMARY KEY AUTOINCREMENT")
+
+		// Convert BIGINT to INTEGER for SQLite (SQLite uses INTEGER for all int types)
+		sql = strings.ReplaceAll(sql, "BIGINT", "INTEGER")
 
 		// Remove IF NOT EXISTS from CREATE INDEX (SQLite supports it differently)
 		// Actually SQLite does support IF NOT EXISTS, so we're good
