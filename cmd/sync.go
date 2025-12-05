@@ -70,36 +70,57 @@ func runSync(cmd *cobra.Command, args []string) error {
 		"movies", syncMovies,
 		"series", syncSeries,
 		"cleanup", syncCleanup,
+		"radarr_url", cfg.Radarr.URL,
+		"sonarr_url", cfg.Sonarr.URL,
 	)
 
+	logger.Debug("initializing sync services")
 	// TODO: Initialize database and sync service
-	// This will be implemented in Phase 2-3
+	// This will be implemented when media sync service is wired up
+	logger.Warn("sync service not yet implemented - placeholder only")
 
 	if syncMovies {
-		logger.Info("syncing movies from Radarr")
+		logger.Info("syncing movies from Radarr",
+			"url", cfg.Radarr.URL,
+		)
+		logger.Debug("fetching movie list from Radarr API")
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 			// syncService.SyncMovies(ctx)
+			logger.Debug("movie sync would happen here")
 		}
+		logger.Info("movie sync completed", "count", 0)
 	}
 
 	if syncSeries {
-		logger.Info("syncing series from Sonarr")
+		logger.Info("syncing series from Sonarr",
+			"url", cfg.Sonarr.URL,
+		)
+		logger.Debug("fetching series list from Sonarr API")
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
 			// syncService.SyncSeries(ctx)
+			logger.Debug("series sync would happen here")
 		}
+		logger.Info("series sync completed", "count", 0)
 	}
 
 	if syncCleanup {
 		logger.Info("cleaning up removed media")
+		logger.Debug("checking for media no longer in source")
 		// syncService.Cleanup(ctx)
+		logger.Debug("cleanup would happen here")
+		logger.Info("cleanup completed", "removed", 0)
 	}
 
-	logger.Info("media sync complete")
+	logger.Info("media sync complete",
+		"movies_synced", 0,
+		"series_synced", 0,
+		"items_cleaned", 0,
+	)
 	return nil
 }

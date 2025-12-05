@@ -15,6 +15,7 @@ var (
 	cfgFile   string
 	debug     bool
 	dbDriver  string
+	jsonLogs  bool
 	cfg       *config.Config
 	logger    *slog.Logger
 	version   = "dev"
@@ -56,6 +57,7 @@ func init() {
 	// Persistent flags available to all commands
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is ./config.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "enable debug logging")
+	rootCmd.PersistentFlags().BoolVar(&jsonLogs, "json", false, "output logs in JSON format")
 	rootCmd.PersistentFlags().StringVar(&dbDriver, "db-driver", "", "database driver override (postgres/sqlite)")
 
 	// Bind flags to viper
@@ -71,14 +73,45 @@ func init() {
 }
 
 func initConfig() error {
-	// Initialize logger
+	// Initialize logger with enhanced formatting
 	logLevel := slog.LevelInfo
 	if debug {
 		logLevel = slog.LevelDebug
 	}
-	logger = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
-		Level: logLevel,
-	}))
+
+	// Choose handler based on format preference
+	var handler slog.Handler
+	handlerOpts := &slog.HandlerOptions{
+		Level:     logLevel,
+		AddSource: debug, // Add source file/line in debug mode
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			// Customize time format for text output
+			if a.Key == slog.TimeKey && !jsonLogs {
+				return slog.Attr{
+					Key:   a.Key,
+					Value: slog.StringValue(a.Value.Time().Format("2006-01-02 15:04:05")),
+				}
+			}
+			return a
+		},
+	}
+
+	if jsonLogs {
+		handler = slog.NewJSONHandler(os.Stdout, handlerOpts)
+	} else {
+		handler = slog.NewTextHandler(os.Stdout, handlerOpts)
+	}
+
+	// Add application context
+	logger = slog.New(handler).With(
+		"version", version,
+		"app", "program-director",
+	)
+
+	logger.Debug("logger initialized",
+		"level", logLevel.String(),
+		"format", map[bool]string{true: "json", false: "text"}[jsonLogs],
+	)
 
 	// Load configuration
 	var err error
@@ -87,7 +120,17 @@ func initConfig() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	logger.Debug("configuration loaded", "config_file", cfgFile)
+	logger.Info("configuration loaded",
+		"config_file", func() string {
+			if cfgFile != "" {
+				return cfgFile
+			}
+			return "default"
+		}(),
+		"database_driver", cfg.Database.Driver,
+		"themes_count", len(cfg.Themes),
+	)
+
 	return nil
 }
 

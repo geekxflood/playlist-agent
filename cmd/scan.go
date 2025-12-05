@@ -57,16 +57,23 @@ func runScan(cmd *cobra.Command, args []string) error {
 	logger.Info("scanning media library",
 		"detailed", scanDetailed,
 		"source", scanSource,
+		"database_driver", cfg.Database.Driver,
 	)
 
+	logger.Debug("initializing database connection")
 	// TODO: Initialize database and query media stats
-	// This will be implemented in Phase 3
+	// This will be implemented when scan service is wired up
+	logger.Warn("scan service not yet implemented - showing placeholder data")
+
+	logger.Debug("querying media statistics")
 
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
 	}
+
+	logger.Debug("generating report")
 
 	// Placeholder output
 	fmt.Println("Media Library Summary")
