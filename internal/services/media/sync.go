@@ -36,12 +36,12 @@ func NewSyncService(
 
 // SyncResult contains the results of a sync operation
 type SyncResult struct {
-	Source    models.MediaSource
-	Created   int
-	Updated   int
-	Deleted   int
-	Errors    int
-	Duration  time.Duration
+	Source   models.MediaSource
+	Created  int
+	Updated  int
+	Deleted  int
+	Errors   int
+	Duration time.Duration
 }
 
 // SyncAll synchronizes all media from both Radarr and Sonarr
@@ -258,10 +258,10 @@ func (s *SyncService) GetStats(ctx context.Context) (*MediaStats, error) {
 	}
 
 	return &MediaStats{
-		Movies:   movieCount,
-		Series:   seriesCount,
-		Anime:    animeCount,
-		Total:    movieCount + seriesCount + animeCount,
+		Movies: movieCount,
+		Series: seriesCount,
+		Anime:  animeCount,
+		Total:  movieCount + seriesCount + animeCount,
 	}, nil
 }
 

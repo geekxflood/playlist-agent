@@ -11,15 +11,15 @@ import (
 
 // Config holds all application configuration
 type Config struct {
-	Debug    bool            `mapstructure:"debug"`
-	Database DatabaseConfig  `mapstructure:"database"`
-	Radarr   RadarrConfig    `mapstructure:"radarr"`
-	Sonarr   SonarrConfig    `mapstructure:"sonarr"`
-	Tunarr   TunarrConfig    `mapstructure:"tunarr"`
-	Ollama   OllamaConfig    `mapstructure:"ollama"`
-	Cooldown CooldownConfig  `mapstructure:"cooldown"`
-	Server   ServerConfig    `mapstructure:"server"`
-	Themes   []ThemeConfig   `mapstructure:"themes"`
+	Debug    bool           `mapstructure:"debug"`
+	Database DatabaseConfig `mapstructure:"database"`
+	Radarr   RadarrConfig   `mapstructure:"radarr"`
+	Sonarr   SonarrConfig   `mapstructure:"sonarr"`
+	Tunarr   TunarrConfig   `mapstructure:"tunarr"`
+	Ollama   OllamaConfig   `mapstructure:"ollama"`
+	Cooldown CooldownConfig `mapstructure:"cooldown"`
+	Server   ServerConfig   `mapstructure:"server"`
+	Themes   []ThemeConfig  `mapstructure:"themes"`
 }
 
 // DatabaseConfig configures the database connection
@@ -63,10 +63,10 @@ type TunarrConfig struct {
 
 // OllamaConfig holds Ollama LLM settings
 type OllamaConfig struct {
-	URL         string `mapstructure:"url"`
-	Model       string `mapstructure:"model"`
+	URL         string  `mapstructure:"url"`
+	Model       string  `mapstructure:"model"`
 	Temperature float64 `mapstructure:"temperature"`
-	NumCtx      int    `mapstructure:"num_ctx"`
+	NumCtx      int     `mapstructure:"num_ctx"`
 }
 
 // CooldownConfig holds media cooldown settings
@@ -78,10 +78,10 @@ type CooldownConfig struct {
 
 // ServerConfig holds HTTP server settings
 type ServerConfig struct {
-	Port             int    `mapstructure:"port"`
-	EnableScheduler  bool   `mapstructure:"enable_scheduler"`
-	MetricsEnabled   bool   `mapstructure:"metrics_enabled"`
-	ShutdownTimeout  int    `mapstructure:"shutdown_timeout"`
+	Port            int  `mapstructure:"port"`
+	EnableScheduler bool `mapstructure:"enable_scheduler"`
+	MetricsEnabled  bool `mapstructure:"metrics_enabled"`
+	ShutdownTimeout int  `mapstructure:"shutdown_timeout"`
 }
 
 // ThemeConfig defines a playlist theme

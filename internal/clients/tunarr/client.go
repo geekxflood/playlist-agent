@@ -31,41 +31,41 @@ func New(cfg *config.TunarrConfig) *Client {
 
 // Channel represents a Tunarr channel
 type Channel struct {
-	ID             string         `json:"id"`
-	Number         int            `json:"number"`
-	Name           string         `json:"name"`
-	Icon           ChannelIcon    `json:"icon"`
-	GroupTitle     string         `json:"groupTitle"`
-	ProgramCount   int            `json:"programCount"`
-	Duration       int64          `json:"duration"`
-	StreamerSource string         `json:"steamerSource"`
+	ID             string      `json:"id"`
+	Number         int         `json:"number"`
+	Name           string      `json:"name"`
+	Icon           ChannelIcon `json:"icon"`
+	GroupTitle     string      `json:"groupTitle"`
+	ProgramCount   int         `json:"programCount"`
+	Duration       int64       `json:"duration"`
+	StreamerSource string      `json:"steamerSource"`
 }
 
 // ChannelIcon holds channel icon information
 type ChannelIcon struct {
-	Path    string `json:"path"`
-	Width   int    `json:"width"`
-	Height  int    `json:"height"`
+	Path   string `json:"path"`
+	Width  int    `json:"width"`
+	Height int    `json:"height"`
 }
 
 // Program represents a program in a channel lineup
 type Program struct {
-	ID           string `json:"id,omitempty"`
-	Type         string `json:"type"`          // content, flex, redirect
-	Duration     int64  `json:"duration"`      // milliseconds
-	PersistTime  bool   `json:"persistTime,omitempty"`
+	ID          string `json:"id,omitempty"`
+	Type        string `json:"type"`     // content, flex, redirect
+	Duration    int64  `json:"duration"` // milliseconds
+	PersistTime bool   `json:"persistTime,omitempty"`
 
 	// For content type
-	ExternalSourceType string       `json:"externalSourceType,omitempty"` // plex, jellyfin
-	ExternalSourceName string       `json:"externalSourceName,omitempty"`
-	ExternalKey        string       `json:"externalKey,omitempty"`
-	PlexFilePath       string       `json:"plexFilePath,omitempty"`
+	ExternalSourceType string `json:"externalSourceType,omitempty"` // plex, jellyfin
+	ExternalSourceName string `json:"externalSourceName,omitempty"`
+	ExternalKey        string `json:"externalKey,omitempty"`
+	PlexFilePath       string `json:"plexFilePath,omitempty"`
 
 	// Additional metadata
-	Title       string `json:"title,omitempty"`
-	Summary     string `json:"summary,omitempty"`
-	Rating      string `json:"rating,omitempty"`
-	Year        int    `json:"year,omitempty"`
+	Title   string `json:"title,omitempty"`
+	Summary string `json:"summary,omitempty"`
+	Rating  string `json:"rating,omitempty"`
+	Year    int    `json:"year,omitempty"`
 }
 
 // Programming represents the programming lineup for a channel
@@ -76,30 +76,30 @@ type Programming struct {
 
 // MediaSource represents a media source (Plex/Jellyfin)
 type MediaSource struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Type         string `json:"type"` // plex, jellyfin
-	URI          string `json:"uri"`
-	AccessToken  string `json:"accessToken,omitempty"`
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Type        string `json:"type"` // plex, jellyfin
+	URI         string `json:"uri"`
+	AccessToken string `json:"accessToken,omitempty"`
 }
 
 // PlexLibrary represents a Plex library
 type PlexLibrary struct {
-	Key       string `json:"key"`
-	Type      string `json:"type"`
-	Title     string `json:"title"`
-	UUID      string `json:"uuid"`
+	Key   string `json:"key"`
+	Type  string `json:"type"`
+	Title string `json:"title"`
+	UUID  string `json:"uuid"`
 }
 
 // PlexMedia represents media from Plex
 type PlexMedia struct {
-	RatingKey    string `json:"ratingKey"`
-	Key          string `json:"key"`
-	Type         string `json:"type"` // movie, episode
-	Title        string `json:"title"`
-	Summary      string `json:"summary"`
-	Year         int    `json:"year"`
-	Duration     int64  `json:"duration"` // milliseconds
+	RatingKey     string `json:"ratingKey"`
+	Key           string `json:"key"`
+	Type          string `json:"type"` // movie, episode
+	Title         string `json:"title"`
+	Summary       string `json:"summary"`
+	Year          int    `json:"year"`
+	Duration      int64  `json:"duration"` // milliseconds
 	ContentRating string `json:"contentRating"`
 }
 

@@ -30,18 +30,18 @@ type Media struct {
 	MediaType  MediaType   `json:"media_type" db:"media_type"`
 
 	// Basic metadata
-	Title    string  `json:"title" db:"title"`
-	Year     int     `json:"year" db:"year"`
-	Overview string  `json:"overview" db:"overview"`
-	Runtime  int     `json:"runtime" db:"runtime"` // in minutes
+	Title    string `json:"title" db:"title"`
+	Year     int    `json:"year" db:"year"`
+	Overview string `json:"overview" db:"overview"`
+	Runtime  int    `json:"runtime" db:"runtime"` // in minutes
 
 	// Genres stored as JSON array
-	Genres     StringSlice `json:"genres" db:"genres"`
+	Genres StringSlice `json:"genres" db:"genres"`
 
 	// Ratings
-	IMDBRating  float64 `json:"imdb_rating" db:"imdb_rating"`
-	TMDBRating  float64 `json:"tmdb_rating" db:"tmdb_rating"`
-	Popularity  float64 `json:"popularity" db:"popularity"`
+	IMDBRating float64 `json:"imdb_rating" db:"imdb_rating"`
+	TMDBRating float64 `json:"tmdb_rating" db:"tmdb_rating"`
+	Popularity float64 `json:"popularity" db:"popularity"`
 
 	// External IDs
 	IMDBID string `json:"imdb_id" db:"imdb_id"`
@@ -107,11 +107,11 @@ type PlayHistory struct {
 
 // MediaCooldown tracks when media can be replayed
 type MediaCooldown struct {
-	ID            int64     `json:"id" db:"id"`
-	MediaID       int64     `json:"media_id" db:"media_id"`
-	CooldownDays  int       `json:"cooldown_days" db:"cooldown_days"`
-	LastPlayedAt  time.Time `json:"last_played_at" db:"last_played_at"`
-	CanReplayAt   time.Time `json:"can_replay_at" db:"can_replay_at"`
+	ID           int64     `json:"id" db:"id"`
+	MediaID      int64     `json:"media_id" db:"media_id"`
+	CooldownDays int       `json:"cooldown_days" db:"cooldown_days"`
+	LastPlayedAt time.Time `json:"last_played_at" db:"last_played_at"`
+	CanReplayAt  time.Time `json:"can_replay_at" db:"can_replay_at"`
 
 	// Denormalized
 	MediaTitle string    `json:"media_title" db:"media_title"`
@@ -135,19 +135,19 @@ func (c *MediaCooldown) DaysRemaining() int {
 // MediaWithScore represents media with a similarity/relevance score
 type MediaWithScore struct {
 	Media
-	Score       float64  `json:"score"`
-	MatchReason string   `json:"match_reason"`
+	Score       float64 `json:"score"`
+	MatchReason string  `json:"match_reason"`
 }
 
 // Channel represents a Tunarr channel
 type Channel struct {
-	ID             string `json:"id"`
-	Number         int    `json:"number"`
-	Name           string `json:"name"`
-	Icon           string `json:"icon"`
-	GroupTitle     string `json:"groupTitle"`
-	ProgramCount   int    `json:"programCount"`
-	Duration       int64  `json:"duration"`
+	ID           string `json:"id"`
+	Number       int    `json:"number"`
+	Name         string `json:"name"`
+	Icon         string `json:"icon"`
+	GroupTitle   string `json:"groupTitle"`
+	ProgramCount int    `json:"programCount"`
+	Duration     int64  `json:"duration"`
 }
 
 // Program represents a program in a Tunarr channel lineup

@@ -37,11 +37,11 @@ func New(cfg *config.OllamaConfig) *Client {
 
 // ChatRequest represents a chat completion request
 type ChatRequest struct {
-	Model       string        `json:"model"`
-	Messages    []ChatMessage `json:"messages"`
-	Stream      bool          `json:"stream"`
-	Options     Options       `json:"options,omitempty"`
-	Format      string        `json:"format,omitempty"` // "json" for JSON output
+	Model    string        `json:"model"`
+	Messages []ChatMessage `json:"messages"`
+	Stream   bool          `json:"stream"`
+	Options  Options       `json:"options,omitempty"`
+	Format   string        `json:"format,omitempty"` // "json" for JSON output
 }
 
 // ChatMessage represents a message in the conversation
@@ -61,25 +61,25 @@ type Options struct {
 
 // ChatResponse represents the response from chat completion
 type ChatResponse struct {
-	Model     string      `json:"model"`
-	CreatedAt string      `json:"created_at"`
-	Message   ChatMessage `json:"message"`
-	Done      bool        `json:"done"`
-	TotalDuration  int64 `json:"total_duration"`
-	LoadDuration   int64 `json:"load_duration"`
-	PromptEvalCount int  `json:"prompt_eval_count"`
-	EvalCount       int  `json:"eval_count"`
-	EvalDuration    int64 `json:"eval_duration"`
+	Model           string      `json:"model"`
+	CreatedAt       string      `json:"created_at"`
+	Message         ChatMessage `json:"message"`
+	Done            bool        `json:"done"`
+	TotalDuration   int64       `json:"total_duration"`
+	LoadDuration    int64       `json:"load_duration"`
+	PromptEvalCount int         `json:"prompt_eval_count"`
+	EvalCount       int         `json:"eval_count"`
+	EvalDuration    int64       `json:"eval_duration"`
 }
 
 // GenerateRequest represents a text generation request
 type GenerateRequest struct {
-	Model    string  `json:"model"`
-	Prompt   string  `json:"prompt"`
-	System   string  `json:"system,omitempty"`
-	Stream   bool    `json:"stream"`
-	Options  Options `json:"options,omitempty"`
-	Format   string  `json:"format,omitempty"`
+	Model   string  `json:"model"`
+	Prompt  string  `json:"prompt"`
+	System  string  `json:"system,omitempty"`
+	Stream  bool    `json:"stream"`
+	Options Options `json:"options,omitempty"`
+	Format  string  `json:"format,omitempty"`
 }
 
 // GenerateResponse represents the response from text generation

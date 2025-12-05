@@ -33,28 +33,28 @@ func New(cfg *config.RadarrConfig) *Client {
 
 // Movie represents a movie from Radarr API
 type Movie struct {
-	ID            int64    `json:"id"`
-	Title         string   `json:"title"`
-	Year          int      `json:"year"`
-	Overview      string   `json:"overview"`
-	Runtime       int      `json:"runtime"`
-	Genres        []string `json:"genres"`
-	Status        string   `json:"status"`
-	Monitored     bool     `json:"monitored"`
-	Path          string   `json:"path"`
-	HasFile       bool     `json:"hasFile"`
-	SizeOnDisk    int64    `json:"sizeOnDisk"`
-	IMDBID        string   `json:"imdbId"`
-	TMDBID        int64    `json:"tmdbId"`
-	Ratings       Ratings  `json:"ratings"`
-	MovieFile     *MovieFile `json:"movieFile,omitempty"`
-	Popularity    float64  `json:"popularity"`
+	ID         int64      `json:"id"`
+	Title      string     `json:"title"`
+	Year       int        `json:"year"`
+	Overview   string     `json:"overview"`
+	Runtime    int        `json:"runtime"`
+	Genres     []string   `json:"genres"`
+	Status     string     `json:"status"`
+	Monitored  bool       `json:"monitored"`
+	Path       string     `json:"path"`
+	HasFile    bool       `json:"hasFile"`
+	SizeOnDisk int64      `json:"sizeOnDisk"`
+	IMDBID     string     `json:"imdbId"`
+	TMDBID     int64      `json:"tmdbId"`
+	Ratings    Ratings    `json:"ratings"`
+	MovieFile  *MovieFile `json:"movieFile,omitempty"`
+	Popularity float64    `json:"popularity"`
 }
 
 // Ratings holds rating information
 type Ratings struct {
-	IMDB    Rating `json:"imdb"`
-	TMDB    Rating `json:"tmdb"`
+	IMDB           Rating `json:"imdb"`
+	TMDB           Rating `json:"tmdb"`
 	RottenTomatoes Rating `json:"rottenTomatoes"`
 }
 
@@ -66,10 +66,10 @@ type Rating struct {
 
 // MovieFile holds movie file information
 type MovieFile struct {
-	ID       int64  `json:"id"`
-	Path     string `json:"path"`
-	Size     int64  `json:"size"`
-	Quality  Quality `json:"quality"`
+	ID      int64   `json:"id"`
+	Path    string  `json:"path"`
+	Size    int64   `json:"size"`
+	Quality Quality `json:"quality"`
 }
 
 // Quality holds quality information

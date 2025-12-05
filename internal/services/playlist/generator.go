@@ -38,14 +38,14 @@ func NewGenerator(
 
 // GenerationResult contains the results of a playlist generation
 type GenerationResult struct {
-	ThemeName   string
-	ChannelID   string
-	Generated   bool
-	ItemCount   int
-	TotalScore  float64
-	Duration    time.Duration
-	Error       error
-	Playlist    *models.Playlist
+	ThemeName  string
+	ChannelID  string
+	Generated  bool
+	ItemCount  int
+	TotalScore float64
+	Duration   time.Duration
+	Error      error
+	Playlist   *models.Playlist
 }
 
 // GenerateAll generates playlists for all themes

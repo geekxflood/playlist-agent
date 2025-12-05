@@ -34,20 +34,20 @@ func New(cfg *config.SonarrConfig) *Client {
 
 // Series represents a series from Sonarr API
 type Series struct {
-	ID             int64    `json:"id"`
-	Title          string   `json:"title"`
-	Year           int      `json:"year"`
-	Overview       string   `json:"overview"`
-	Runtime        int      `json:"runtime"`
-	Genres         []string `json:"genres"`
-	Status         string   `json:"status"`
-	Monitored      bool     `json:"monitored"`
-	Path           string   `json:"path"`
-	SeriesType     string   `json:"seriesType"` // standard, anime, daily
-	TVDBID         int64    `json:"tvdbId"`
-	IMDBID         string   `json:"imdbId"`
-	Ratings        Ratings  `json:"ratings"`
-	Statistics     Stats    `json:"statistics"`
+	ID         int64    `json:"id"`
+	Title      string   `json:"title"`
+	Year       int      `json:"year"`
+	Overview   string   `json:"overview"`
+	Runtime    int      `json:"runtime"`
+	Genres     []string `json:"genres"`
+	Status     string   `json:"status"`
+	Monitored  bool     `json:"monitored"`
+	Path       string   `json:"path"`
+	SeriesType string   `json:"seriesType"` // standard, anime, daily
+	TVDBID     int64    `json:"tvdbId"`
+	IMDBID     string   `json:"imdbId"`
+	Ratings    Ratings  `json:"ratings"`
+	Statistics Stats    `json:"statistics"`
 }
 
 // Ratings holds rating information
@@ -58,11 +58,11 @@ type Ratings struct {
 
 // Stats holds series statistics
 type Stats struct {
-	SeasonCount       int   `json:"seasonCount"`
-	EpisodeCount      int   `json:"episodeCount"`
-	EpisodeFileCount  int   `json:"episodeFileCount"`
-	TotalEpisodeCount int   `json:"totalEpisodeCount"`
-	SizeOnDisk        int64 `json:"sizeOnDisk"`
+	SeasonCount       int     `json:"seasonCount"`
+	EpisodeCount      int     `json:"episodeCount"`
+	EpisodeFileCount  int     `json:"episodeFileCount"`
+	TotalEpisodeCount int     `json:"totalEpisodeCount"`
+	SizeOnDisk        int64   `json:"sizeOnDisk"`
 	PercentOfEpisodes float64 `json:"percentOfEpisodes"`
 }
 
