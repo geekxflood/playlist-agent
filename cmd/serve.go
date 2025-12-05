@@ -15,6 +15,7 @@ import (
 	"github.com/geekxflood/program-director/internal/clients/tunarr"
 	"github.com/geekxflood/program-director/internal/database"
 	"github.com/geekxflood/program-director/internal/database/repository"
+	"github.com/geekxflood/program-director/internal/scheduler"
 	"github.com/geekxflood/program-director/internal/server"
 	"github.com/geekxflood/program-director/internal/services/cooldown"
 	"github.com/geekxflood/program-director/internal/services/media"
@@ -25,6 +26,7 @@ import (
 var (
 	servePort            int
 	serveEnableScheduler bool
+	serveScheduleCron    string
 	serveMetricsEnabled  bool
 )
 
@@ -57,6 +59,7 @@ Examples:
 func init() {
 	serveCmd.Flags().IntVarP(&servePort, "port", "p", 8080, "HTTP server port")
 	serveCmd.Flags().BoolVar(&serveEnableScheduler, "enable-scheduler", false, "enable built-in cron scheduler")
+	serveCmd.Flags().StringVar(&serveScheduleCron, "schedule", "0 2 * * *", "cron schedule for automated generation (default: daily at 2 AM)")
 	serveCmd.Flags().BoolVar(&serveMetricsEnabled, "metrics", true, "enable prometheus metrics endpoint")
 }
 
@@ -166,17 +169,50 @@ func runServe(cmd *cobra.Command, args []string) error {
 	fmt.Println("  POST /api/v1/webhooks     - Webhook triggers")
 	fmt.Println()
 
+	// Initialize scheduler if enabled
+	var sched *scheduler.Scheduler
 	if serveEnableScheduler {
-		logger.Info("scheduler enabled",
+		logger.Info("initializing scheduler",
+			"schedule", serveScheduleCron,
 			"themes", len(cfg.Themes),
 		)
-		// TODO: Initialize and start scheduler
-		logger.Warn("scheduler not yet implemented")
+
+		schedulerCfg := &scheduler.Config{
+			Schedule: serveScheduleCron,
+			DryRun:   false,
+		}
+
+		var err error
+		sched, err = scheduler.NewScheduler(schedulerCfg, playlistGenerator, cfg.Themes, logger)
+		if err != nil {
+			return fmt.Errorf("failed to create scheduler: %w", err)
+		}
+
+		// Start scheduler in goroutine
+		go func() {
+			if err := sched.Start(ctx, serveScheduleCron, false); err != nil {
+				logger.Error("scheduler error", "error", err)
+			}
+		}()
+
+		fmt.Printf("Scheduler: Enabled (cron: %s)\n", serveScheduleCron)
+		if nextRun := sched.GetNextRun(); !nextRun.IsZero() {
+			fmt.Printf("Next run: %s\n", nextRun.Format("2006-01-02 15:04:05 MST"))
+		}
+		fmt.Println()
 	}
 
 	// Start HTTP server (blocking)
 	if err := httpServer.Start(ctx, servePort); err != nil {
 		return fmt.Errorf("server error: %w", err)
+	}
+
+	// Cleanup scheduler if it was started
+	if sched != nil {
+		logger.Info("stopping scheduler")
+		if err := sched.Stop(); err != nil {
+			logger.Error("failed to stop scheduler", "error", err)
+		}
 	}
 
 	logger.Info("server shutdown complete")
