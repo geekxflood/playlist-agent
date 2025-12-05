@@ -1,0 +1,81 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: program-director
+  namespace: argocd
+spec:
+  generators:
+    # Git generator - deploy from tags matching semantic versioning
+    - git:
+        repoURL: https://github.com/geekxflood/program-director.git
+        revision: HEAD
+        directories:
+          - path: charts/program-director
+        requeueAfterSeconds: 180
+
+    # List generator for multiple environments
+    - list:
+        elements:
+          - cluster: in-cluster
+            namespace: program-director
+            environment: production
+            repoURL: https://github.com/geekxflood/program-director.git
+            targetRevision: HEAD
+            valueFiles: values-production.yaml
+
+          - cluster: in-cluster
+            namespace: program-director-staging
+            environment: staging
+            repoURL: https://github.com/geekxflood/program-director.git
+            targetRevision: main
+            valueFiles: values-staging.yaml
+
+  template:
+    metadata:
+      name: 'program-director-{{environment}}'
+      labels:
+        app: program-director
+        environment: '{{environment}}'
+      annotations:
+        argocd.argoproj.io/manifest-generate-paths: /charts/program-director
+        notifications.argoproj.io/subscribe.on-sync-succeeded.slack: program-director-deployments
+
+    spec:
+      project: default
+
+      source:
+        repoURL: '{{repoURL}}'
+        targetRevision: '{{targetRevision}}'
+        path: charts/program-director
+        helm:
+          releaseName: program-director
+          valueFiles:
+            - '{{valueFiles}}'
+
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{namespace}}'
+
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+          allowEmpty: false
+        syncOptions:
+          - CreateNamespace=true
+          - PruneLast=true
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 5s
+            factor: 2
+            maxDuration: 3m
+
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jqPathExpressions:
+            - '.spec.template.metadata.annotations."checksum/config"'
+
+      revisionHistoryLimit: 10

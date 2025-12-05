@@ -1,0 +1,220 @@
+## program-director Helm values
+
+## Container image
+image:
+  repository: ghcr.io/geekxflood/program-director
+  pullPolicy: IfNotPresent
+  tag: "" # Defaults to Chart appVersion
+
+imagePullSecrets: []
+
+## Deployment configuration
+replicaCount: 1
+
+## Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+## Pod annotations
+podAnnotations: {}
+
+## Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+
+## Container security context
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+## Service configuration
+service:
+  type: ClusterIP
+  port: 8080
+  annotations: {}
+
+## Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: program-director.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: program-director-tls
+    #   hosts:
+    #     - program-director.local
+
+## Resource limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+## Autoscaling (disabled by default for stateful app)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+## Node selector
+nodeSelector: {}
+
+## Tolerations
+tolerations: []
+
+## Affinity
+affinity: {}
+
+## Liveness probe
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+## Readiness probe
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+## Prometheus metrics
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+    interval: 30s
+    scrapeTimeout: 10s
+    labels: {}
+
+## Application configuration
+config:
+  ## Logging
+  debug: false
+  jsonLogs: false
+
+  ## Database configuration
+  database:
+    ## Driver: postgres or sqlite
+    driver: sqlite
+
+    ## SQLite configuration
+    sqlite:
+      path: /data/program-director.db
+
+    ## PostgreSQL configuration (used if driver=postgres)
+    postgres:
+      host: postgresql
+      port: 5432
+      database: program_director
+      user: program_director
+      password: ""
+      sslmode: disable
+
+  ## Radarr configuration
+  radarr:
+    url: http://radarr:7878
+    apiKey: ""
+
+  ## Sonarr configuration
+  sonarr:
+    url: http://sonarr:8989
+    apiKey: ""
+
+  ## Tunarr configuration
+  tunarr:
+    url: http://tunarr:8000
+
+  ## Trakt.tv configuration (optional)
+  trakt:
+    clientId: ""
+    clientSecret: ""
+
+  ## Ollama configuration
+  ollama:
+    url: http://ollama:11434
+    model: dolphin-llama3:8b
+    temperature: 0.7
+    numCtx: 8192
+
+  ## Cooldown configuration (days)
+  cooldown:
+    movieDays: 30
+    seriesDays: 14
+    animeDays: 14
+
+  ## Server configuration
+  server:
+    port: 8080
+    enableScheduler: false
+    metricsEnabled: true
+    shutdownTimeout: 30
+
+  ## Themes configuration
+  themes: []
+    # - name: sci-fi-night
+    #   description: "Science fiction movies and shows"
+    #   channelId: "channel-1"
+    #   schedule: "0 2 * * *"
+    #   mediaTypes: ["movie", "series"]
+    #   genres: ["Science Fiction", "Sci-Fi"]
+    #   keywords: ["space", "future", "technology"]
+    #   minRating: 7.0
+    #   maxItems: 20
+    #   duration: 180
+
+## Environment variables from secrets
+env: []
+  # - name: RADARR_API_KEY
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: program-director-secrets
+  #       key: radarr-api-key
+
+## Existing secret for sensitive values
+existingSecret: ""
+
+## Persistence for SQLite database
+persistence:
+  enabled: true
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  annotations: {}
+
+## Init containers
+initContainers: []
+
+## Sidecar containers
+extraContainers: []
+
+## Extra volumes
+extraVolumes: []
+
+## Extra volume mounts
+extraVolumeMounts: []
