@@ -74,7 +74,7 @@ metrics:
 
 persistence:
   enabled: true
-  storageClass: standard
+  storageClass: local-path
   size: 5Gi
 
 existingSecret: program-director-staging-secrets
