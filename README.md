@@ -16,8 +16,12 @@ Program Director generates themed channel programming in Tunarr by:
 - **Theme-Based Playlists**: Configure themes with genres, keywords, and scheduling
 - **Database-Backed**: SQLite or PostgreSQL for media caching and cooldown tracking
 - **Radarr/Sonarr Integration**: Syncs and caches media metadata locally
+- **Trakt.tv Integration**: Explore trending content and media metadata
 - **Tunarr Channels**: Updates channel programming with curated content
 - **Cooldown Management**: Prevents media from being replayed too frequently
+- **HTTP API Server**: RESTful API with health checks and Prometheus metrics
+- **Cron Scheduler**: Automated playlist generation on configurable schedules
+- **Kubernetes Ready**: Comprehensive Helm charts for production deployment
 - **CLI & Server Modes**: Run one-off generations or as a scheduled service
 
 ## Installation
@@ -46,21 +50,23 @@ go build -o program-director .
 
 ### Environment Variables
 
-| Variable            | Description                                    | Required |
-| ------------------- | ---------------------------------------------- | -------- |
-| `RADARR_API_KEY`    | Radarr API key                                 | Yes      |
-| `SONARR_API_KEY`    | Sonarr API key                                 | Yes      |
-| `RADARR_URL`        | Radarr API URL                                 | No       |
-| `SONARR_URL`        | Sonarr API URL                                 | No       |
-| `TUNARR_URL`        | Tunarr API URL                                 | No       |
-| `OLLAMA_URL`        | Ollama API URL                                 | No       |
-| `OLLAMA_MODEL`      | Ollama model name (default: dolphin-llama3:8b) | No       |
-| `DB_DRIVER`         | Database driver (postgres/sqlite)              | No       |
-| `POSTGRES_HOST`     | PostgreSQL host                                | No       |
-| `POSTGRES_PORT`     | PostgreSQL port                                | No       |
-| `POSTGRES_DATABASE` | PostgreSQL database name                       | No       |
-| `POSTGRES_USER`     | PostgreSQL user                                | No       |
-| `POSTGRES_PASSWORD` | PostgreSQL password                            | No       |
+| Variable              | Description                                    | Required |
+| --------------------- | ---------------------------------------------- | -------- |
+| `RADARR_API_KEY`      | Radarr API key                                 | Yes      |
+| `SONARR_API_KEY`      | Sonarr API key                                 | Yes      |
+| `RADARR_URL`          | Radarr API URL                                 | No       |
+| `SONARR_URL`          | Sonarr API URL                                 | No       |
+| `TUNARR_URL`          | Tunarr API URL                                 | No       |
+| `TRAKT_CLIENT_ID`     | Trakt.tv client ID (optional)                  | No       |
+| `TRAKT_CLIENT_SECRET` | Trakt.tv client secret (optional)              | No       |
+| `OLLAMA_URL`          | Ollama API URL                                 | No       |
+| `OLLAMA_MODEL`        | Ollama model name (default: dolphin-llama3:8b) | No       |
+| `DB_DRIVER`           | Database driver (postgres/sqlite)              | No       |
+| `POSTGRES_HOST`       | PostgreSQL host                                | No       |
+| `POSTGRES_PORT`       | PostgreSQL port                                | No       |
+| `POSTGRES_DATABASE`   | PostgreSQL database name                       | No       |
+| `POSTGRES_USER`       | PostgreSQL user                                | No       |
+| `POSTGRES_PASSWORD`   | PostgreSQL password                            | No       |
 
 ### Config File
 
@@ -119,24 +125,37 @@ themes:
 ```bash
 # Sync media metadata from Radarr/Sonarr
 program-director sync
+program-director sync --movies                    # Sync only movies
+program-director sync --series --cleanup          # Sync TV shows and cleanup removed media
 
 # Scan media library (display stats)
 program-director scan
+program-director scan --detailed                  # Show detailed statistics with top genres
 
 # Generate playlist for a specific theme
 program-director generate --theme sci-fi-night
+program-director generate --theme sci-fi-night --dry-run  # Preview without applying
 
 # Generate playlists for all themes
 program-director generate --all-themes
 
-# Dry run (preview without applying)
-program-director generate --theme sci-fi-night --dry-run
-
-# Run as HTTP server with scheduler
+# Run as HTTP server
 program-director serve
+program-director serve --port 9000                # Custom port
+program-director serve --enable-scheduler         # With automated scheduling
+program-director serve --schedule "0 */6 * * *"   # Custom schedule (every 6 hours)
+
+# Trakt.tv commands
+program-director trakt trending --movies          # Show trending movies
+program-director trakt popular --shows            # Show popular TV shows
+program-director trakt search --query "Inception" # Search for media
 
 # Show version
 program-director version
+
+# Enable debug logging
+program-director --debug sync
+program-director --json serve                     # JSON formatted logs
 ```
 
 ### Docker Usage
@@ -170,6 +189,55 @@ services:
       - ./data:/app/data
     command: serve
 ```
+
+### HTTP API Server
+
+When running in server mode, Program Director provides a RESTful API:
+
+```bash
+# Start the HTTP server
+program-director serve --port 8080
+
+# Available endpoints:
+# GET  /health              - Health check
+# GET  /ready               - Readiness check (database connectivity)
+# GET  /metrics             - Prometheus metrics
+# GET  /api/v1/media        - List media items
+# POST /api/v1/media/sync   - Trigger media sync
+# GET  /api/v1/themes       - List configured themes
+# POST /api/v1/generate     - Generate all playlists
+# POST /api/v1/generate/:id - Generate specific theme
+# GET  /api/v1/history      - View play history
+# GET  /api/v1/cooldowns    - View active cooldowns
+# POST /api/v1/webhooks     - Webhook endpoint
+```
+
+### Kubernetes Deployment
+
+Deploy Program Director to Kubernetes using Helm:
+
+```bash
+# Install with default values
+helm install program-director ./charts/program-director
+
+# Install with custom values
+helm install program-director ./charts/program-director \
+  --set config.radarr.apiKey=your-key \
+  --set config.sonarr.apiKey=your-key \
+  --values custom-values.yaml
+
+# Using production values
+helm install program-director ./charts/program-director \
+  --values charts/program-director/values-production.yaml
+```
+
+For ArgoCD GitOps deployment, apply the ApplicationSet:
+
+```bash
+kubectl apply -f argocd/applicationset.yaml
+```
+
+See [charts/program-director/README.md](charts/program-director/README.md) for complete Helm documentation.
 
 ## Architecture
 
