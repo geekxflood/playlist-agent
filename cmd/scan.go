@@ -8,6 +8,10 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+
+	"github.com/geekxflood/program-director/internal/database"
+	"github.com/geekxflood/program-director/internal/database/repository"
+	"github.com/geekxflood/program-director/pkg/models"
 )
 
 var (
@@ -61,11 +65,32 @@ func runScan(cmd *cobra.Command, args []string) error {
 	)
 
 	logger.Debug("initializing database connection")
-	// TODO: Initialize database and query media stats
-	// This will be implemented when scan service is wired up
-	logger.Warn("scan service not yet implemented - showing placeholder data")
+	db, err := database.New(ctx, &cfg.Database, logger)
+	if err != nil {
+		logger.Error("failed to initialize database", "error", err)
+		return fmt.Errorf("failed to initialize database: %w", err)
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			logger.Error("failed to close database", "error", err)
+		}
+	}()
+
+	logger.Debug("database connection established")
+
+	// Initialize repositories
+	mediaRepo := repository.NewMediaRepository(db)
+	historyRepo := repository.NewHistoryRepository(db)
+	cooldownRepo := repository.NewCooldownRepository(db)
 
 	logger.Debug("querying media statistics")
+
+	// Get media counts by type
+	stats, err := getMediaStatistics(ctx, mediaRepo, historyRepo, cooldownRepo, scanSource)
+	if err != nil {
+		logger.Error("failed to get statistics", "error", err)
+		return fmt.Errorf("failed to get statistics: %w", err)
+	}
 
 	select {
 	case <-ctx.Done():
@@ -75,34 +100,195 @@ func runScan(cmd *cobra.Command, args []string) error {
 
 	logger.Debug("generating report")
 
-	// Placeholder output
-	fmt.Println("Media Library Summary")
-	fmt.Println("=====================")
-	fmt.Println()
+	// Display results
+	printMediaSummary(stats, scanDetailed)
 
-	// Print configured themes
-	fmt.Printf("Configured Themes: %d\n", len(cfg.Themes))
-	for _, theme := range cfg.Themes {
-		fmt.Printf("  - %s\n", theme.Name)
-	}
-	fmt.Println()
-
-	// TODO: Query database for actual stats
-	fmt.Println("Database Statistics (placeholder)")
-	fmt.Println("  Movies:     0")
-	fmt.Println("  TV Shows:   0")
-	fmt.Println("  Anime:      0")
-	fmt.Println()
-	fmt.Println("Play History")
-	fmt.Println("  Total plays:    0")
-	fmt.Println("  On cooldown:    0")
-
-	if scanDetailed {
-		fmt.Println()
-		fmt.Println("Detailed Statistics")
-		fmt.Println("-------------------")
-		// TODO: Add genre breakdown, rating distribution, etc.
-	}
+	logger.Info("scan complete",
+		"movies", stats.MovieCount,
+		"series", stats.SeriesCount,
+		"anime", stats.AnimeCount,
+		"total_plays", stats.TotalPlays,
+	)
 
 	return nil
+}
+
+// MediaStatistics holds media library statistics
+type MediaStatistics struct {
+	MovieCount       int64
+	SeriesCount      int64
+	AnimeCount       int64
+	TotalPlays       int64
+	OnCooldown       int64
+	TopGenres        map[string]int
+	AverageRating    float64
+	TotalSize        int64
+	ConfiguredThemes int
+}
+
+// getMediaStatistics queries the database for media statistics
+func getMediaStatistics(
+	ctx context.Context,
+	mediaRepo *repository.MediaRepository,
+	historyRepo *repository.HistoryRepository,
+	cooldownRepo *repository.CooldownRepository,
+	source string,
+) (*MediaStatistics, error) {
+	stats := &MediaStatistics{
+		TopGenres:        make(map[string]int),
+		ConfiguredThemes: len(cfg.Themes),
+	}
+
+	// Count movies
+	hasFile := true
+	movieOpts := repository.ListMediaOptions{
+		MediaType: models.MediaTypeMovie,
+		HasFile:   &hasFile,
+	}
+	if source == "radarr" {
+		movieOpts.Source = models.MediaSourceRadarr
+	}
+	stats.MovieCount, _ = mediaRepo.Count(ctx, movieOpts)
+
+	// Count series
+	seriesOpts := repository.ListMediaOptions{
+		MediaType: models.MediaTypeSeries,
+		HasFile:   &hasFile,
+	}
+	if source == "sonarr" {
+		seriesOpts.Source = models.MediaSourceSonarr
+	}
+	stats.SeriesCount, _ = mediaRepo.Count(ctx, seriesOpts)
+
+	// Count anime
+	animeOpts := repository.ListMediaOptions{
+		MediaType: models.MediaTypeAnime,
+		HasFile:   &hasFile,
+	}
+	if source == "sonarr" {
+		animeOpts.Source = models.MediaSourceSonarr
+	}
+	stats.AnimeCount, _ = mediaRepo.Count(ctx, animeOpts)
+
+	// Get play history count
+	stats.TotalPlays, _ = historyRepo.Count(ctx, repository.ListHistoryOptions{})
+
+	// Get cooldown count
+	stats.OnCooldown, _ = cooldownRepo.CountActive(ctx)
+
+	// Get all media for genre and rating stats
+	allMedia, err := mediaRepo.List(ctx, repository.ListMediaOptions{
+		HasFile: &hasFile,
+		Limit:   1000,
+	})
+	if err == nil {
+		totalRating := 0.0
+		ratingCount := 0
+		for _, m := range allMedia {
+			// Count genres
+			for _, genre := range m.Genres {
+				stats.TopGenres[genre]++
+			}
+
+			// Average rating
+			if m.IMDBRating > 0 {
+				totalRating += m.IMDBRating
+				ratingCount++
+			} else if m.TMDBRating > 0 {
+				totalRating += m.TMDBRating
+				ratingCount++
+			}
+
+			// Total size
+			stats.TotalSize += m.SizeOnDisk
+		}
+		if ratingCount > 0 {
+			stats.AverageRating = totalRating / float64(ratingCount)
+		}
+	}
+
+	return stats, nil
+}
+
+// printMediaSummary displays media statistics
+func printMediaSummary(stats *MediaStatistics, detailed bool) {
+	fmt.Println()
+	fmt.Println("┌─────────────────────────────────────────────────────────┐")
+	fmt.Println("│         Program Director - Media Library Summary        │")
+	fmt.Println("└─────────────────────────────────────────────────────────┘")
+	fmt.Println()
+
+	// Configuration
+	fmt.Printf("Configured Themes: %d\n", stats.ConfiguredThemes)
+	if stats.ConfiguredThemes > 0 {
+		fmt.Println("\nThemes:")
+		for i, theme := range cfg.Themes {
+			fmt.Printf("  %d. %-20s (Channel: %s)\n", i+1, theme.Name, theme.ChannelID)
+		}
+	}
+	fmt.Println()
+
+	// Media counts
+	fmt.Println("Media Library")
+	fmt.Println("─────────────")
+	fmt.Printf("  Movies:     %6d\n", stats.MovieCount)
+	fmt.Printf("  TV Shows:   %6d\n", stats.SeriesCount)
+	fmt.Printf("  Anime:      %6d\n", stats.AnimeCount)
+	fmt.Printf("  Total:      %6d\n", stats.MovieCount+stats.SeriesCount+stats.AnimeCount)
+	fmt.Println()
+
+	// Playback stats
+	fmt.Println("Playback History")
+	fmt.Println("────────────────")
+	fmt.Printf("  Total plays:    %6d\n", stats.TotalPlays)
+	fmt.Printf("  On cooldown:    %6d\n", stats.OnCooldown)
+	fmt.Println()
+
+	// Average rating
+	if stats.AverageRating > 0 {
+		fmt.Printf("Average Rating: %.1f/10.0\n", stats.AverageRating)
+		fmt.Println()
+	}
+
+	// Storage
+	if stats.TotalSize > 0 {
+		sizeGB := float64(stats.TotalSize) / (1024 * 1024 * 1024)
+		fmt.Printf("Total Storage: %.2f GB\n", sizeGB)
+		fmt.Println()
+	}
+
+	// Detailed stats
+	if detailed && len(stats.TopGenres) > 0 {
+		fmt.Println("Top Genres")
+		fmt.Println("──────────")
+
+		// Sort genres by count
+		type genreCount struct {
+			genre string
+			count int
+		}
+		var genres []genreCount
+		for genre, count := range stats.TopGenres {
+			genres = append(genres, genreCount{genre, count})
+		}
+
+		// Simple bubble sort
+		for i := 0; i < len(genres); i++ {
+			for j := i + 1; j < len(genres); j++ {
+				if genres[i].count < genres[j].count {
+					genres[i], genres[j] = genres[j], genres[i]
+				}
+			}
+		}
+
+		// Show top 10
+		max := 10
+		if len(genres) < max {
+			max = len(genres)
+		}
+		for i := 0; i < max; i++ {
+			fmt.Printf("  %-20s %4d\n", genres[i].genre, genres[i].count)
+		}
+		fmt.Println()
+	}
 }

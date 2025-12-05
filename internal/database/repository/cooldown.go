@@ -184,6 +184,16 @@ func (r *CooldownRepository) IsOnCooldown(ctx context.Context, mediaID int64) (b
 	return count > 0, err
 }
 
+// CountActive returns the number of media currently on cooldown
+func (r *CooldownRepository) CountActive(ctx context.Context) (int64, error) {
+	var count int64
+	err := r.db.QueryRow(ctx,
+		"SELECT COUNT(*) FROM media_cooldowns WHERE can_replay_at > $1",
+		time.Now(),
+	).Scan(&count)
+	return count, err
+}
+
 // Count returns the total number of cooldown records
 func (r *CooldownRepository) Count(ctx context.Context, opts ListCooldownOptions) (int64, error) {
 	query := "SELECT COUNT(*) FROM media_cooldowns WHERE 1=1"
