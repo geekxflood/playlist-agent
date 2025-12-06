@@ -1,6 +1,8 @@
+// Package config provides configuration management for program-director.
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -131,7 +133,8 @@ func Load(configFile string) (*Config, error) {
 
 	// Read config file
 	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if errors.As(err, &configFileNotFoundError) {
 			return nil, fmt.Errorf("error reading config file: %w", err)
 		}
 		// Config file not found is okay, we'll use defaults and env vars
@@ -200,21 +203,32 @@ func setDefaults(v *viper.Viper) {
 // bindEnvVars maps environment variables to config keys
 func bindEnvVars(v *viper.Viper) {
 	// Direct environment variable mappings
-	v.BindEnv("radarr.api_key", "RADARR_API_KEY")
-	v.BindEnv("sonarr.api_key", "SONARR_API_KEY")
-	v.BindEnv("radarr.url", "RADARR_URL")
-	v.BindEnv("sonarr.url", "SONARR_URL")
-	v.BindEnv("tunarr.url", "TUNARR_URL")
-	v.BindEnv("trakt.client_id", "TRAKT_CLIENT_ID")
-	v.BindEnv("trakt.client_secret", "TRAKT_CLIENT_SECRET")
-	v.BindEnv("ollama.url", "OLLAMA_URL")
-	v.BindEnv("ollama.model", "OLLAMA_MODEL")
-	v.BindEnv("database.driver", "DB_DRIVER")
-	v.BindEnv("database.postgres.host", "POSTGRES_HOST")
-	v.BindEnv("database.postgres.port", "POSTGRES_PORT")
-	v.BindEnv("database.postgres.database", "POSTGRES_DATABASE")
-	v.BindEnv("database.postgres.user", "POSTGRES_USER")
-	v.BindEnv("database.postgres.password", "POSTGRES_PASSWORD")
+	bindings := []struct {
+		key string
+		env string
+	}{
+		{"radarr.api_key", "RADARR_API_KEY"},
+		{"sonarr.api_key", "SONARR_API_KEY"},
+		{"radarr.url", "RADARR_URL"},
+		{"sonarr.url", "SONARR_URL"},
+		{"tunarr.url", "TUNARR_URL"},
+		{"trakt.client_id", "TRAKT_CLIENT_ID"},
+		{"trakt.client_secret", "TRAKT_CLIENT_SECRET"},
+		{"ollama.url", "OLLAMA_URL"},
+		{"ollama.model", "OLLAMA_MODEL"},
+		{"database.driver", "DB_DRIVER"},
+		{"database.postgres.host", "POSTGRES_HOST"},
+		{"database.postgres.port", "POSTGRES_PORT"},
+		{"database.postgres.database", "POSTGRES_DATABASE"},
+		{"database.postgres.user", "POSTGRES_USER"},
+		{"database.postgres.password", "POSTGRES_PASSWORD"},
+	}
+
+	for _, b := range bindings {
+		if err := v.BindEnv(b.key, b.env); err != nil {
+			panic(fmt.Sprintf("failed to bind env var %s: %v", b.env, err))
+		}
+	}
 }
 
 // Validate checks if the configuration is valid
@@ -223,7 +237,7 @@ func (c *Config) Validate() error {
 	switch c.Database.Driver {
 	case "postgres":
 		if c.Database.Postgres.Host == "" {
-			return fmt.Errorf("postgres host is required")
+			return errors.New("postgres host is required")
 		}
 	case "sqlite":
 		// SQLite path can be empty (use default)
@@ -233,31 +247,31 @@ func (c *Config) Validate() error {
 
 	// Validate Radarr config
 	if c.Radarr.URL == "" {
-		return fmt.Errorf("radarr URL is required")
+		return errors.New("radarr URL is required")
 	}
 	if c.Radarr.APIKey == "" {
-		return fmt.Errorf("radarr API key is required")
+		return errors.New("radarr API key is required")
 	}
 
 	// Validate Sonarr config
 	if c.Sonarr.URL == "" {
-		return fmt.Errorf("sonarr URL is required")
+		return errors.New("sonarr URL is required")
 	}
 	if c.Sonarr.APIKey == "" {
-		return fmt.Errorf("sonarr API key is required")
+		return errors.New("sonarr API key is required")
 	}
 
 	// Validate Tunarr config
 	if c.Tunarr.URL == "" {
-		return fmt.Errorf("tunarr URL is required")
+		return errors.New("tunarr URL is required")
 	}
 
 	// Validate Ollama config
 	if c.Ollama.URL == "" {
-		return fmt.Errorf("ollama URL is required")
+		return errors.New("ollama URL is required")
 	}
 	if c.Ollama.Model == "" {
-		return fmt.Errorf("ollama model is required")
+		return errors.New("ollama model is required")
 	}
 
 	// Validate themes

@@ -15,6 +15,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [1.1.1] - 2025-12-06
+
+### Changed
+- Comprehensive code quality improvements: 79% reduction in linter issues (114 → 24)
+- Added proper error handling for all unchecked error returns (50 errcheck fixes)
+- Added package documentation comments for all packages (15 packages)
+- Improved code naming conventions and exported function documentation (33 revive fixes)
+- Pre-allocated slices with known capacity for better performance (4 prealloc fixes)
+- Fixed error string capitalization to follow Go conventions (3 staticcheck fixes)
+- Renamed variables that redefine built-in identifiers (max → maxGenres, min → minInt)
+- Added `github.com/robfig/cron/v3` to allowed dependencies in golangci-lint config
+- Renamed exported types to avoid stuttering (CooldownStats → Stats, MediaStats → Stats)
+- Added constant block comments for MediaType and MediaSource enums
+
+### Fixed
+- Fixed missing `errors` and `strings` imports in multiple packages
+- Fixed context handling in scheduler and server shutdown
+- Fixed ineffective assignment in history repository
+
+### Security
+- Changed directory permissions from 0755 to 0750 for better security (gosec fix)
+
 ## [1.0.3] - 2025-12-06
 
 ### Fixed

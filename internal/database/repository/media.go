@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/geekxflood/program-director/internal/database"
@@ -17,42 +18,6 @@ type MediaRepository struct {
 // NewMediaRepository creates a new MediaRepository
 func NewMediaRepository(db database.DB) *MediaRepository {
 	return &MediaRepository{db: db}
-}
-
-// Create inserts a new media record
-func (r *MediaRepository) Create(ctx context.Context, m *models.Media) error {
-	now := time.Now()
-	m.CreatedAt = now
-	m.UpdatedAt = now
-	m.SyncedAt = now
-
-	query := `
-		INSERT INTO media (
-			external_id, source, media_type, title, year, overview, runtime,
-			genres, imdb_rating, tmdb_rating, popularity,
-			imdb_id, tmdb_id, tvdb_id, path, has_file, size_on_disk,
-			status, monitored, synced_at, created_at, updated_at
-		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7,
-			$8, $9, $10, $11,
-			$12, $13, $14, $15, $16, $17,
-			$18, $19, $20, $21, $22
-		) RETURNING id
-	`
-
-	genresValue, err := m.Genres.Value()
-	if err != nil {
-		return fmt.Errorf("failed to marshal genres: %w", err)
-	}
-
-	err = r.db.QueryRow(ctx, query,
-		m.ExternalID, m.Source, m.MediaType, m.Title, m.Year, m.Overview, m.Runtime,
-		genresValue, m.IMDBRating, m.TMDBRating, m.Popularity,
-		m.IMDBID, m.TMDBID, m.TVDBID, m.Path, m.HasFile, m.SizeOnDisk,
-		m.Status, m.Monitored, m.SyncedAt, m.CreatedAt, m.UpdatedAt,
-	).Scan(&m.ID)
-
-	return err
 }
 
 // Upsert creates or updates a media record based on external_id and source
@@ -109,29 +74,6 @@ func (r *MediaRepository) Upsert(ctx context.Context, m *models.Media) error {
 	).Scan(&m.ID, &m.CreatedAt)
 
 	return err
-}
-
-// GetByID retrieves a media record by ID
-func (r *MediaRepository) GetByID(ctx context.Context, id int64) (*models.Media, error) {
-	query := `
-		SELECT id, external_id, source, media_type, title, year, overview, runtime,
-			genres, imdb_rating, tmdb_rating, popularity,
-			imdb_id, tmdb_id, tvdb_id, path, has_file, size_on_disk,
-			status, monitored, synced_at, created_at, updated_at
-		FROM media WHERE id = $1
-	`
-
-	var m models.Media
-	err := r.db.QueryRow(ctx, query, id).Scan(
-		&m.ID, &m.ExternalID, &m.Source, &m.MediaType, &m.Title, &m.Year, &m.Overview, &m.Runtime,
-		&m.Genres, &m.IMDBRating, &m.TMDBRating, &m.Popularity,
-		&m.IMDBID, &m.TMDBID, &m.TVDBID, &m.Path, &m.HasFile, &m.SizeOnDisk,
-		&m.Status, &m.Monitored, &m.SyncedAt, &m.CreatedAt, &m.UpdatedAt,
-	)
-	if err != nil {
-		return nil, err
-	}
-	return &m, nil
 }
 
 // GetByExternalID retrieves a media record by external ID and source
@@ -217,7 +159,7 @@ func (r *MediaRepository) List(ctx context.Context, opts ListMediaOptions) ([]mo
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var media []models.Media
 	for rows.Next() {
@@ -244,14 +186,16 @@ func (r *MediaRepository) ListByGenres(ctx context.Context, genres []string, med
 	args := make([]interface{}, 0)
 	argIndex := 1
 
+	var genreConditionsSb247 strings.Builder
 	for i, genre := range genres {
 		if i > 0 {
-			genreConditions += " OR "
+			genreConditionsSb247.WriteString(" OR ")
 		}
-		genreConditions += fmt.Sprintf("genres LIKE $%d", argIndex)
+		genreConditionsSb247.WriteString(fmt.Sprintf("genres LIKE $%d", argIndex))
 		args = append(args, "%"+genre+"%")
 		argIndex++
 	}
+	genreConditions += genreConditionsSb247.String()
 
 	query := fmt.Sprintf(`
 		SELECT id, external_id, source, media_type, title, year, overview, runtime,
@@ -271,14 +215,16 @@ func (r *MediaRepository) ListByGenres(ctx context.Context, genres []string, med
 	// Exclude specific IDs (e.g., already on cooldown)
 	if len(excludeIDs) > 0 {
 		query += " AND id NOT IN ("
+		var querySb274 strings.Builder
 		for i, id := range excludeIDs {
 			if i > 0 {
-				query += ","
+				querySb274.WriteString(",")
 			}
-			query += fmt.Sprintf("$%d", argIndex)
+			querySb274.WriteString(fmt.Sprintf("$%d", argIndex))
 			args = append(args, id)
 			argIndex++
 		}
+		query += querySb274.String()
 		query += ")"
 	}
 
@@ -288,7 +234,7 @@ func (r *MediaRepository) ListByGenres(ctx context.Context, genres []string, med
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var media []models.Media
 	for rows.Next() {
@@ -334,12 +280,6 @@ func (r *MediaRepository) Count(ctx context.Context, opts ListMediaOptions) (int
 	var count int64
 	err := r.db.QueryRow(ctx, query, args...).Scan(&count)
 	return count, err
-}
-
-// Delete removes a media record
-func (r *MediaRepository) Delete(ctx context.Context, id int64) error {
-	_, err := r.db.Exec(ctx, "DELETE FROM media WHERE id = $1", id)
-	return err
 }
 
 // DeleteStale removes media that hasn't been synced since the given time

@@ -1,3 +1,4 @@
+// Package media provides media library synchronization services.
 package media
 
 import (
@@ -42,29 +43,6 @@ type SyncResult struct {
 	Deleted  int
 	Errors   int
 	Duration time.Duration
-}
-
-// SyncAll synchronizes all media from both Radarr and Sonarr
-func (s *SyncService) SyncAll(ctx context.Context, cleanup bool) ([]SyncResult, error) {
-	var results []SyncResult
-
-	// Sync movies
-	movieResult, err := s.SyncMovies(ctx, cleanup)
-	if err != nil {
-		s.logger.Error("failed to sync movies", "error", err)
-	} else {
-		results = append(results, *movieResult)
-	}
-
-	// Sync series
-	seriesResult, err := s.SyncSeries(ctx, cleanup)
-	if err != nil {
-		s.logger.Error("failed to sync series", "error", err)
-	} else {
-		results = append(results, *seriesResult)
-	}
-
-	return results, nil
 }
 
 // SyncMovies synchronizes movies from Radarr
@@ -225,50 +203,4 @@ func (s *SyncService) SyncSeries(ctx context.Context, cleanup bool) (*SyncResult
 	)
 
 	return result, nil
-}
-
-// GetStats returns media statistics
-func (s *SyncService) GetStats(ctx context.Context) (*MediaStats, error) {
-	hasFile := true
-
-	movieCount, err := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
-		Source:  models.MediaSourceRadarr,
-		HasFile: &hasFile,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	seriesCount, err := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
-		Source:    models.MediaSourceSonarr,
-		MediaType: models.MediaTypeSeries,
-		HasFile:   &hasFile,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	animeCount, err := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
-		Source:    models.MediaSourceSonarr,
-		MediaType: models.MediaTypeAnime,
-		HasFile:   &hasFile,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return &MediaStats{
-		Movies: movieCount,
-		Series: seriesCount,
-		Anime:  animeCount,
-		Total:  movieCount + seriesCount + animeCount,
-	}, nil
-}
-
-// MediaStats contains media catalog statistics
-type MediaStats struct {
-	Movies int64
-	Series int64
-	Anime  int64
-	Total  int64
 }

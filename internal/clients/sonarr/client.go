@@ -1,3 +1,4 @@
+// Package sonarr provides a client for interacting with the Sonarr API.
 package sonarr
 
 import (
@@ -81,36 +82,6 @@ func (c *Client) GetSeries(ctx context.Context) ([]Series, error) {
 	return series, nil
 }
 
-// GetSeriesByID retrieves a single series by ID
-func (c *Client) GetSeriesByID(ctx context.Context, id int64) (*Series, error) {
-	req, err := c.newRequest(ctx, "GET", fmt.Sprintf("/api/v3/series/%d", id), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var series Series
-	if err := c.do(req, &series); err != nil {
-		return nil, fmt.Errorf("failed to get series %d: %w", id, err)
-	}
-
-	return &series, nil
-}
-
-// HealthCheck verifies the Sonarr connection
-func (c *Client) HealthCheck(ctx context.Context) error {
-	req, err := c.newRequest(ctx, "GET", "/api/v3/system/status", nil)
-	if err != nil {
-		return err
-	}
-
-	var status map[string]interface{}
-	if err := c.do(req, &status); err != nil {
-		return fmt.Errorf("sonarr health check failed: %w", err)
-	}
-
-	return nil
-}
-
 // ToMedia converts a Sonarr series to a Media model
 func (s *Series) ToMedia() *models.Media {
 	// Determine media type based on series type
@@ -189,7 +160,10 @@ func (c *Client) do(req *http.Request, v interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("API error: status %d, failed to read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(body))
 	}
 

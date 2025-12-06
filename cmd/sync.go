@@ -53,7 +53,7 @@ func init() {
 	syncCmd.Flags().BoolVar(&syncCleanup, "cleanup", false, "remove media no longer in source")
 }
 
-func runSync(cmd *cobra.Command, args []string) error {
+func runSync(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

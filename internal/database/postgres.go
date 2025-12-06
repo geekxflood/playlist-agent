@@ -32,7 +32,9 @@ func NewPostgres(ctx context.Context, cfg *config.PostgresConfig, logger *slog.L
 
 	// Test connection
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			return nil, fmt.Errorf("failed to ping postgres: %w (and failed to close: %w)", err, closeErr)
+		}
 		return nil, fmt.Errorf("failed to ping postgres: %w", err)
 	}
 
@@ -118,7 +120,9 @@ func (p *PostgresDB) Migrate(ctx context.Context) error {
 		}
 
 		if _, err := tx.Exec(ctx, m.SQL); err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return fmt.Errorf("failed to execute migration %d: %w (rollback error: %w)", m.Version, err, rbErr)
+			}
 			return fmt.Errorf("failed to execute migration %d: %w", m.Version, err)
 		}
 
@@ -142,22 +146,27 @@ type PostgresTx struct {
 	tx *sql.Tx
 }
 
+// Commit commits the transaction
 func (t *PostgresTx) Commit() error {
 	return t.tx.Commit()
 }
 
+// Rollback rolls back the transaction
 func (t *PostgresTx) Rollback() error {
 	return t.tx.Rollback()
 }
 
+// Query executes a query that returns rows
 func (t *PostgresTx) Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	return t.tx.QueryContext(ctx, query, args...)
 }
 
+// QueryRow executes a query that is expected to return at most one row
 func (t *PostgresTx) QueryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	return t.tx.QueryRowContext(ctx, query, args...)
 }
 
+// Exec executes a query without returning any rows
 func (t *PostgresTx) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return t.tx.ExecContext(ctx, query, args...)
 }

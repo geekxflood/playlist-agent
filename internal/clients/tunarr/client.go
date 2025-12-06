@@ -1,3 +1,4 @@
+// Package tunarr provides a client for interacting with the Tunarr API.
 package tunarr
 
 import (
@@ -103,24 +104,9 @@ type PlexMedia struct {
 	ContentRating string `json:"contentRating"`
 }
 
-// GetChannels retrieves all channels
-func (c *Client) GetChannels(ctx context.Context) ([]Channel, error) {
-	req, err := c.newRequest(ctx, "GET", "/api/channels", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var channels []Channel
-	if err := c.do(req, &channels); err != nil {
-		return nil, fmt.Errorf("failed to get channels: %w", err)
-	}
-
-	return channels, nil
-}
-
 // GetChannel retrieves a single channel by ID
 func (c *Client) GetChannel(ctx context.Context, id string) (*Channel, error) {
-	req, err := c.newRequest(ctx, "GET", fmt.Sprintf("/api/channels/%s", id), nil)
+	req, err := c.newRequest(ctx, "GET", "/api/channels/"+id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -131,21 +117,6 @@ func (c *Client) GetChannel(ctx context.Context, id string) (*Channel, error) {
 	}
 
 	return &channel, nil
-}
-
-// GetProgramming retrieves the programming for a channel
-func (c *Client) GetProgramming(ctx context.Context, channelID string) (*Programming, error) {
-	req, err := c.newRequest(ctx, "GET", fmt.Sprintf("/api/channels/%s/programming", channelID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var programming Programming
-	if err := c.do(req, &programming); err != nil {
-		return nil, fmt.Errorf("failed to get programming for channel %s: %w", channelID, err)
-	}
-
-	return &programming, nil
 }
 
 // SetProgramming sets the programming for a channel
@@ -182,67 +153,6 @@ func (c *Client) GetMediaSources(ctx context.Context) ([]MediaSource, error) {
 	return sources, nil
 }
 
-// GetPlexLibraries retrieves libraries from a Plex media source
-func (c *Client) GetPlexLibraries(ctx context.Context, sourceID string) ([]PlexLibrary, error) {
-	req, err := c.newRequest(ctx, "GET", fmt.Sprintf("/api/plex/%s/libraries", sourceID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var libraries []PlexLibrary
-	if err := c.do(req, &libraries); err != nil {
-		return nil, fmt.Errorf("failed to get Plex libraries: %w", err)
-	}
-
-	return libraries, nil
-}
-
-// GetPlexLibraryMedia retrieves media from a Plex library
-func (c *Client) GetPlexLibraryMedia(ctx context.Context, sourceID, libraryKey string) ([]PlexMedia, error) {
-	req, err := c.newRequest(ctx, "GET", fmt.Sprintf("/api/plex/%s/libraries/%s/media", sourceID, libraryKey), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var media []PlexMedia
-	if err := c.do(req, &media); err != nil {
-		return nil, fmt.Errorf("failed to get Plex library media: %w", err)
-	}
-
-	return media, nil
-}
-
-// SearchPlexMedia searches for media in Plex
-func (c *Client) SearchPlexMedia(ctx context.Context, sourceID, query string) ([]PlexMedia, error) {
-	path := fmt.Sprintf("/api/plex/%s/search?query=%s", sourceID, url.QueryEscape(query))
-	req, err := c.newRequest(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var media []PlexMedia
-	if err := c.do(req, &media); err != nil {
-		return nil, fmt.Errorf("failed to search Plex media: %w", err)
-	}
-
-	return media, nil
-}
-
-// HealthCheck verifies the Tunarr connection
-func (c *Client) HealthCheck(ctx context.Context) error {
-	req, err := c.newRequest(ctx, "GET", "/api/version", nil)
-	if err != nil {
-		return err
-	}
-
-	var version map[string]interface{}
-	if err := c.do(req, &version); err != nil {
-		return fmt.Errorf("tunarr health check failed: %w", err)
-	}
-
-	return nil
-}
-
 // newRequest creates a new HTTP request
 func (c *Client) newRequest(ctx context.Context, method, path string, body io.Reader) (*http.Request, error) {
 	u, err := url.Parse(c.baseURL + path)
@@ -269,7 +179,10 @@ func (c *Client) do(req *http.Request, v interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("API error: status %d, failed to read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(body))
 	}
 

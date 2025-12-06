@@ -1,3 +1,4 @@
+// Package trakt provides a client for interacting with the Trakt.tv API.
 package trakt
 
 import (
@@ -136,26 +137,6 @@ type SearchResult struct {
 	Show  *Show  `json:"show,omitempty"`
 }
 
-// GetMovie retrieves movie information by ID
-func (c *Client) GetMovie(ctx context.Context, id string) (*Movie, error) {
-	var movie Movie
-	path := fmt.Sprintf("/movies/%s?extended=full", id)
-	if err := c.doRequest(ctx, http.MethodGet, path, &movie); err != nil {
-		return nil, err
-	}
-	return &movie, nil
-}
-
-// GetShow retrieves show information by ID
-func (c *Client) GetShow(ctx context.Context, id string) (*Show, error) {
-	var show Show
-	path := fmt.Sprintf("/shows/%s?extended=full", id)
-	if err := c.doRequest(ctx, http.MethodGet, path, &show); err != nil {
-		return nil, err
-	}
-	return &show, nil
-}
-
 // GetTrendingMovies retrieves currently trending movies
 func (c *Client) GetTrendingMovies(ctx context.Context, limit int) ([]TrendingMovie, error) {
 	if limit == 0 {
@@ -208,32 +189,6 @@ func (c *Client) GetPopularShows(ctx context.Context, limit int) ([]Show, error)
 	return shows, nil
 }
 
-// SearchMovies searches for movies by query
-func (c *Client) SearchMovies(ctx context.Context, query string, limit int) ([]SearchResult, error) {
-	if limit == 0 {
-		limit = 10
-	}
-	var results []SearchResult
-	path := fmt.Sprintf("/search/movie?query=%s&extended=full&limit=%d", query, limit)
-	if err := c.doRequest(ctx, http.MethodGet, path, &results); err != nil {
-		return nil, err
-	}
-	return results, nil
-}
-
-// SearchShows searches for shows by query
-func (c *Client) SearchShows(ctx context.Context, query string, limit int) ([]SearchResult, error) {
-	if limit == 0 {
-		limit = 10
-	}
-	var results []SearchResult
-	path := fmt.Sprintf("/search/show?query=%s&extended=full&limit=%d", query, limit)
-	if err := c.doRequest(ctx, http.MethodGet, path, &results); err != nil {
-		return nil, err
-	}
-	return results, nil
-}
-
 // Search performs a general search across movies and shows
 func (c *Client) Search(ctx context.Context, query string, limit int) ([]SearchResult, error) {
 	if limit == 0 {
@@ -245,24 +200,4 @@ func (c *Client) Search(ctx context.Context, query string, limit int) ([]SearchR
 		return nil, err
 	}
 	return results, nil
-}
-
-// GetMovieRatings retrieves user ratings for a movie
-func (c *Client) GetMovieRatings(ctx context.Context, id string) (map[string]interface{}, error) {
-	var ratings map[string]interface{}
-	path := fmt.Sprintf("/movies/%s/ratings", id)
-	if err := c.doRequest(ctx, http.MethodGet, path, &ratings); err != nil {
-		return nil, err
-	}
-	return ratings, nil
-}
-
-// GetShowRatings retrieves user ratings for a show
-func (c *Client) GetShowRatings(ctx context.Context, id string) (map[string]interface{}, error) {
-	var ratings map[string]interface{}
-	path := fmt.Sprintf("/shows/%s/ratings", id)
-	if err := c.doRequest(ctx, http.MethodGet, path, &ratings); err != nil {
-		return nil, err
-	}
-	return ratings, nil
 }

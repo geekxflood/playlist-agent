@@ -1,3 +1,4 @@
+// Package similarity provides content similarity scoring and analysis.
 package similarity
 
 import (
@@ -53,7 +54,7 @@ func (s *Scorer) FindCandidates(ctx context.Context, theme *config.ThemeConfig, 
 
 	// Phase 2: LLM refinement on top candidates
 	if len(candidates) > 20 && s.ollama != nil {
-		refined, err := s.refinWithLLM(ctx, theme, candidates[:min(50, len(candidates))])
+		refined, err := s.refinWithLLM(ctx, theme, candidates[:minInt(50, len(candidates))])
 		if err != nil {
 			s.logger.Warn("LLM refinement failed, using genre scores",
 				"error", err,
@@ -265,7 +266,7 @@ Rank ALL items by how well they fit this theme. Output JSON only.`,
 	return candidates, nil
 }
 
-func min(a, b int) int {
+func minInt(a, b int) int {
 	if a < b {
 		return a
 	}

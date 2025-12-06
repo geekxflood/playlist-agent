@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -40,8 +41,10 @@ Examples:
 
   # Get popular movies
   program-director trakt popular --movies`,
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cmd.Help()
+	RunE: func(cmd *cobra.Command, _ []string) error {
+		if err := cmd.Help(); err != nil {
+			return fmt.Errorf("failed to show help: %w", err)
+		}
 		return nil
 	},
 }
@@ -89,10 +92,12 @@ func init() {
 	// Search flags
 	traktSearchCmd.Flags().StringVarP(&traktQuery, "query", "q", "", "search query (required)")
 	traktSearchCmd.Flags().IntVarP(&traktLimit, "limit", "l", 10, "number of results to show")
-	traktSearchCmd.MarkFlagRequired("query")
+	if err := traktSearchCmd.MarkFlagRequired("query"); err != nil {
+		panic(fmt.Sprintf("failed to mark query flag as required: %v", err))
+	}
 }
 
-func runTraktTrending(cmd *cobra.Command, args []string) error {
+func runTraktTrending(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -106,7 +111,7 @@ func runTraktTrending(cmd *cobra.Command, args []string) error {
 	}()
 
 	if cfg.Trakt.ClientID == "" {
-		return fmt.Errorf("Trakt client ID not configured. Set TRAKT_CLIENT_ID environment variable")
+		return errors.New("trakt client ID not configured - set TRAKT_CLIENT_ID environment variable")
 	}
 
 	client := trakt.New(&cfg.Trakt)
@@ -132,7 +137,11 @@ func runTraktTrending(cmd *cobra.Command, args []string) error {
 			fmt.Printf("%2d. %s (%d) - Watchers: %d, Rating: %.1f/10\n",
 				i+1, tm.Movie.Title, tm.Movie.Year, tm.Watchers, tm.Movie.Rating)
 			if tm.Movie.Overview != "" {
-				fmt.Printf("    %s\n", tm.Movie.Overview[:min(100, len(tm.Movie.Overview))]+"...")
+				overview := tm.Movie.Overview
+				if len(overview) > 100 {
+					overview = overview[:100]
+				}
+				fmt.Printf("    %s\n", overview+"...")
 			}
 			fmt.Println()
 		}
@@ -153,7 +162,11 @@ func runTraktTrending(cmd *cobra.Command, args []string) error {
 			fmt.Printf("%2d. %s (%d) - Watchers: %d, Rating: %.1f/10\n",
 				i+1, ts.Show.Title, ts.Show.Year, ts.Watchers, ts.Show.Rating)
 			if ts.Show.Overview != "" {
-				fmt.Printf("    %s\n", ts.Show.Overview[:min(100, len(ts.Show.Overview))]+"...")
+				overview := ts.Show.Overview
+				if len(overview) > 100 {
+					overview = overview[:100]
+				}
+				fmt.Printf("    %s\n", overview+"...")
 			}
 			fmt.Println()
 		}
@@ -162,7 +175,7 @@ func runTraktTrending(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runTraktPopular(cmd *cobra.Command, args []string) error {
+func runTraktPopular(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -176,7 +189,7 @@ func runTraktPopular(cmd *cobra.Command, args []string) error {
 	}()
 
 	if cfg.Trakt.ClientID == "" {
-		return fmt.Errorf("Trakt client ID not configured. Set TRAKT_CLIENT_ID environment variable")
+		return errors.New("trakt client ID not configured - set TRAKT_CLIENT_ID environment variable")
 	}
 
 	client := trakt.New(&cfg.Trakt)
@@ -202,7 +215,11 @@ func runTraktPopular(cmd *cobra.Command, args []string) error {
 			fmt.Printf("%2d. %s (%d) - Rating: %.1f/10\n",
 				i+1, movie.Title, movie.Year, movie.Rating)
 			if movie.Overview != "" {
-				fmt.Printf("    %s\n", movie.Overview[:min(100, len(movie.Overview))]+"...")
+				overview := movie.Overview
+				if len(overview) > 100 {
+					overview = overview[:100]
+				}
+				fmt.Printf("    %s\n", overview+"...")
 			}
 			fmt.Println()
 		}
@@ -223,7 +240,11 @@ func runTraktPopular(cmd *cobra.Command, args []string) error {
 			fmt.Printf("%2d. %s (%d) - Rating: %.1f/10\n",
 				i+1, show.Title, show.Year, show.Rating)
 			if show.Overview != "" {
-				fmt.Printf("    %s\n", show.Overview[:min(100, len(show.Overview))]+"...")
+				overview := show.Overview
+				if len(overview) > 100 {
+					overview = overview[:100]
+				}
+				fmt.Printf("    %s\n", overview+"...")
 			}
 			fmt.Println()
 		}
@@ -232,7 +253,7 @@ func runTraktPopular(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-func runTraktSearch(cmd *cobra.Command, args []string) error {
+func runTraktSearch(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -246,7 +267,7 @@ func runTraktSearch(cmd *cobra.Command, args []string) error {
 	}()
 
 	if cfg.Trakt.ClientID == "" {
-		return fmt.Errorf("Trakt client ID not configured. Set TRAKT_CLIENT_ID environment variable")
+		return errors.New("trakt client ID not configured - set TRAKT_CLIENT_ID environment variable")
 	}
 
 	client := trakt.New(&cfg.Trakt)
@@ -273,24 +294,25 @@ func runTraktSearch(cmd *cobra.Command, args []string) error {
 			fmt.Printf("%2d. [Movie] %s (%d) - Rating: %.1f/10, Score: %.2f\n",
 				i+1, result.Movie.Title, result.Movie.Year, result.Movie.Rating, result.Score)
 			if result.Movie.Overview != "" {
-				fmt.Printf("    %s\n", result.Movie.Overview[:min(100, len(result.Movie.Overview))]+"...")
+				overview := result.Movie.Overview
+				if len(overview) > 100 {
+					overview = overview[:100]
+				}
+				fmt.Printf("    %s\n", overview+"...")
 			}
 		} else if result.Show != nil {
 			fmt.Printf("%2d. [Show] %s (%d) - Rating: %.1f/10, Score: %.2f\n",
 				i+1, result.Show.Title, result.Show.Year, result.Show.Rating, result.Score)
 			if result.Show.Overview != "" {
-				fmt.Printf("    %s\n", result.Show.Overview[:min(100, len(result.Show.Overview))]+"...")
+				overview := result.Show.Overview
+				if len(overview) > 100 {
+					overview = overview[:100]
+				}
+				fmt.Printf("    %s\n", overview+"...")
 			}
 		}
 		fmt.Println()
 	}
 
 	return nil
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

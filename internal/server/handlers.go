@@ -1,7 +1,9 @@
+// Package server provides HTTP server and API handlers for program-director.
 package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -28,7 +30,10 @@ type successResponse struct {
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		// Log error but can't change response at this point
+		http.Error(w, "failed to encode JSON response", http.StatusInternalServerError)
+	}
 }
 
 // writeError writes an error response
@@ -42,7 +47,7 @@ func writeError(w http.ResponseWriter, status int, err error, message string) {
 // Health check handler
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -56,7 +61,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 // Ready check handler
 func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -80,7 +85,7 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 // Metrics handler (Prometheus format)
 func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -88,20 +93,35 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 
 	// Get counts
 	hasFile := true
-	movieCount, _ := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
+	movieCount, err := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
 		MediaType: models.MediaTypeMovie,
 		HasFile:   &hasFile,
 	})
-	seriesCount, _ := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
+	if err != nil {
+		movieCount = 0
+	}
+	seriesCount, err := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
 		MediaType: models.MediaTypeSeries,
 		HasFile:   &hasFile,
 	})
-	animeCount, _ := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
+	if err != nil {
+		seriesCount = 0
+	}
+	animeCount, err := s.mediaRepo.Count(ctx, repository.ListMediaOptions{
 		MediaType: models.MediaTypeAnime,
 		HasFile:   &hasFile,
 	})
-	historyCount, _ := s.historyRepo.Count(ctx, repository.ListHistoryOptions{})
-	cooldownCount, _ := s.cooldownRepo.CountActive(ctx)
+	if err != nil {
+		animeCount = 0
+	}
+	historyCount, err := s.historyRepo.Count(ctx, repository.ListHistoryOptions{})
+	if err != nil {
+		historyCount = 0
+	}
+	cooldownCount, err := s.cooldownRepo.CountActive(ctx)
+	if err != nil {
+		cooldownCount = 0
+	}
 
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 	fmt.Fprintf(w, "# HELP program_director_media_total Total number of media items by type\n")
@@ -129,7 +149,7 @@ func (s *Server) handleMetrics(w http.ResponseWriter, r *http.Request) {
 // Media list handler
 func (s *Server) handleMediaList(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -167,7 +187,7 @@ func (s *Server) handleMediaList(w http.ResponseWriter, r *http.Request) {
 // Media sync handler
 func (s *Server) handleMediaSync(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -215,7 +235,7 @@ func (s *Server) handleMediaSync(w http.ResponseWriter, r *http.Request) {
 // Themes list handler
 func (s *Server) handleThemesList(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -231,7 +251,7 @@ func (s *Server) handleThemesList(w http.ResponseWriter, r *http.Request) {
 // Generate all playlists handler
 func (s *Server) handleGenerateAll(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -248,7 +268,7 @@ func (s *Server) handleGenerateAll(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Convert results to JSON-friendly format
-	var resultData []map[string]interface{}
+	resultData := make([]map[string]interface{}, 0, len(results))
 	for _, result := range results {
 		data := map[string]interface{}{
 			"theme":      result.ThemeName,
@@ -276,14 +296,14 @@ func (s *Server) handleGenerateAll(w http.ResponseWriter, r *http.Request) {
 // Generate specific theme handler
 func (s *Server) handleGenerateTheme(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
 	// Extract theme name from path
 	themeName := strings.TrimPrefix(r.URL.Path, "/api/v1/generate/")
 	if themeName == "" {
-		writeError(w, http.StatusBadRequest, fmt.Errorf("theme name required"), "")
+		writeError(w, http.StatusBadRequest, errors.New("theme name required"), "")
 		return
 	}
 
@@ -297,7 +317,7 @@ func (s *Server) handleGenerateTheme(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if themeConfig == nil {
-		writeError(w, http.StatusNotFound, fmt.Errorf("theme not found"), "")
+		writeError(w, http.StatusNotFound, errors.New("theme not found"), "")
 		return
 	}
 
@@ -332,7 +352,7 @@ func (s *Server) handleGenerateTheme(w http.ResponseWriter, r *http.Request) {
 // History handler
 func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -359,7 +379,7 @@ func (s *Server) handleHistory(w http.ResponseWriter, r *http.Request) {
 // Cooldowns handler
 func (s *Server) handleCooldowns(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 
@@ -387,7 +407,7 @@ func (s *Server) handleCooldowns(w http.ResponseWriter, r *http.Request) {
 // Webhooks handler
 func (s *Server) handleWebhooks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		writeError(w, http.StatusMethodNotAllowed, fmt.Errorf("method not allowed"), "")
+		writeError(w, http.StatusMethodNotAllowed, errors.New("method not allowed"), "")
 		return
 	}
 

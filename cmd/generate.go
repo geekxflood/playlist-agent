@@ -1,7 +1,9 @@
+// Package cmd provides command-line interface commands for program-director.
 package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -48,7 +50,7 @@ func init() {
 	generateCmd.Flags().BoolVarP(&dryRun, "dry-run", "n", false, "preview without applying to Tunarr")
 }
 
-func runGenerate(cmd *cobra.Command, args []string) error {
+func runGenerate(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -62,11 +64,11 @@ func runGenerate(cmd *cobra.Command, args []string) error {
 	}()
 
 	if !allThemes && themeName == "" {
-		return fmt.Errorf("specify --theme or --all-themes")
+		return errors.New("specify --theme or --all-themes")
 	}
 
 	if allThemes && themeName != "" {
-		return fmt.Errorf("cannot use both --theme and --all-themes")
+		return errors.New("cannot use both --theme and --all-themes")
 	}
 
 	logger.Info("starting playlist generation",

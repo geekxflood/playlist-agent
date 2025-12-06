@@ -28,7 +28,7 @@ func NewSQLite(ctx context.Context, cfg *config.SQLiteConfig, logger *slog.Logge
 
 	// Ensure directory exists
 	dir := filepath.Dir(dbPath)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return nil, fmt.Errorf("failed to create database directory: %w", err)
 	}
 
@@ -45,7 +45,9 @@ func NewSQLite(ctx context.Context, cfg *config.SQLiteConfig, logger *slog.Logge
 
 	// Test connection
 	if err := db.PingContext(ctx); err != nil {
-		db.Close()
+		if closeErr := db.Close(); closeErr != nil {
+			return nil, fmt.Errorf("failed to ping sqlite: %w (and failed to close: %w)", err, closeErr)
+		}
 		return nil, fmt.Errorf("failed to ping sqlite: %w", err)
 	}
 
@@ -136,7 +138,9 @@ func (s *SQLiteDB) Migrate(ctx context.Context) error {
 		// Convert placeholders in migration SQL
 		migrationSQL := convertPlaceholders(m.SQL)
 		if _, err := tx.Exec(ctx, migrationSQL); err != nil {
-			tx.Rollback()
+			if rbErr := tx.Rollback(); rbErr != nil {
+				return fmt.Errorf("failed to execute migration %d: %w (rollback error: %w)", m.Version, err, rbErr)
+			}
 			return fmt.Errorf("failed to execute migration %d: %w", m.Version, err)
 		}
 
@@ -160,24 +164,29 @@ type SQLiteTx struct {
 	tx *sql.Tx
 }
 
+// Commit commits the transaction
 func (t *SQLiteTx) Commit() error {
 	return t.tx.Commit()
 }
 
+// Rollback rolls back the transaction
 func (t *SQLiteTx) Rollback() error {
 	return t.tx.Rollback()
 }
 
+// Query executes a query that returns rows
 func (t *SQLiteTx) Query(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error) {
 	query = convertPlaceholders(query)
 	return t.tx.QueryContext(ctx, query, args...)
 }
 
+// QueryRow executes a query that is expected to return at most one row
 func (t *SQLiteTx) QueryRow(ctx context.Context, query string, args ...interface{}) *sql.Row {
 	query = convertPlaceholders(query)
 	return t.tx.QueryRowContext(ctx, query, args...)
 }
 
+// Exec executes a query without returning any rows
 func (t *SQLiteTx) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	query = convertPlaceholders(query)
 	return t.tx.ExecContext(ctx, query, args...)

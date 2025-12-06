@@ -32,7 +32,7 @@ using AI to select appropriate content from your media library.
 
 It integrates with Radarr, Sonarr, and Tunarr to create intelligent
 programming schedules based on configurable themes.`,
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+	PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 		// Skip config loading for version command
 		if cmd.Name() == "version" {
 			return nil
@@ -61,8 +61,12 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&dbDriver, "db-driver", "", "database driver override (postgres/sqlite)")
 
 	// Bind flags to viper
-	viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug"))
-	viper.BindPFlag("database.driver", rootCmd.PersistentFlags().Lookup("db-driver"))
+	if err := viper.BindPFlag("debug", rootCmd.PersistentFlags().Lookup("debug")); err != nil {
+		panic(fmt.Sprintf("failed to bind debug flag: %v", err))
+	}
+	if err := viper.BindPFlag("database.driver", rootCmd.PersistentFlags().Lookup("db-driver")); err != nil {
+		panic(fmt.Sprintf("failed to bind db-driver flag: %v", err))
+	}
 
 	// Add subcommands
 	rootCmd.AddCommand(versionCmd)
@@ -85,7 +89,7 @@ func initConfig() error {
 	handlerOpts := &slog.HandlerOptions{
 		Level:     logLevel,
 		AddSource: debug, // Add source file/line in debug mode
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+		ReplaceAttr: func(_ []string, a slog.Attr) slog.Attr {
 			// Customize time format for text output
 			if a.Key == slog.TimeKey && !jsonLogs {
 				return slog.Attr{
@@ -139,7 +143,7 @@ func initConfig() error {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version information",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Printf("program-director %s\n", version)
 		fmt.Printf("  commit: %s\n", commit)
 		fmt.Printf("  built:  %s\n", buildDate)

@@ -1,7 +1,9 @@
+// Package playlist provides playlist generation services using LLM-based content selection.
 package playlist
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"time"
@@ -50,7 +52,7 @@ type GenerationResult struct {
 
 // GenerateAll generates playlists for all themes
 func (g *Generator) GenerateAll(ctx context.Context, themes []config.ThemeConfig, dryRun bool) ([]GenerationResult, error) {
-	var results []GenerationResult
+	results := make([]GenerationResult, 0, len(themes))
 
 	for _, theme := range themes {
 		select {
@@ -202,11 +204,11 @@ func (g *Generator) applyToTunarr(ctx context.Context, channelID string, items [
 	}
 
 	if plexSourceID == "" {
-		return fmt.Errorf("no Plex media source found in Tunarr")
+		return errors.New("no Plex media source found in Tunarr")
 	}
 
 	// Build programming lineup
-	var programs []tunarr.Program
+	programs := make([]tunarr.Program, 0, len(items))
 	for _, item := range items {
 		// Convert runtime to milliseconds
 		durationMs := int64(item.Runtime) * 60 * 1000
@@ -242,15 +244,4 @@ func (g *Generator) applyToTunarr(ctx context.Context, channelID string, items [
 	)
 
 	return nil
-}
-
-// ValidateChannel checks if a channel exists in Tunarr
-func (g *Generator) ValidateChannel(ctx context.Context, channelID string) error {
-	_, err := g.tunarr.GetChannel(ctx, channelID)
-	return err
-}
-
-// GetChannels retrieves all Tunarr channels
-func (g *Generator) GetChannels(ctx context.Context) ([]tunarr.Channel, error) {
-	return g.tunarr.GetChannels(ctx)
 }

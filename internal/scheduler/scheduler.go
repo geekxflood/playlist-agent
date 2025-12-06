@@ -1,3 +1,4 @@
+// Package scheduler provides automated playlist generation scheduling using cron.
 package scheduler
 
 import (
@@ -70,7 +71,14 @@ func (s *Scheduler) Start(ctx context.Context, schedule string, dryRun bool) err
 
 	// Add generation job
 	_, err := s.cron.AddFunc(schedule, func() {
-		s.runGeneration(context.Background(), dryRun)
+		// Create a new context with timeout for each run.
+		// Note: We use context.Background() here instead of the parent context because:
+		// 1. Each cron job execution should have its own independent context
+		// 2. The parent context (ctx) is tied to the scheduler's lifecycle, not individual runs
+		// 3. We want each run to have a fresh 30-minute timeout regardless of when it starts
+		runCtx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+		defer cancel()
+		s.runGeneration(runCtx, dryRun)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to add cron job: %w", err)
@@ -81,7 +89,7 @@ func (s *Scheduler) Start(ctx context.Context, schedule string, dryRun bool) err
 
 	s.logger.Info("scheduler started successfully")
 
-	// Block until context cancelled
+	// Block until context canceled
 	<-ctx.Done()
 
 	s.logger.Info("stopping scheduler")
@@ -93,13 +101,6 @@ func (s *Scheduler) Stop() error {
 	ctx := s.cron.Stop()
 	<-ctx.Done()
 	s.logger.Info("scheduler stopped")
-	return nil
-}
-
-// RunNow triggers an immediate generation run
-func (s *Scheduler) RunNow(ctx context.Context, dryRun bool) error {
-	s.logger.Info("manual generation triggered")
-	s.runGeneration(ctx, dryRun)
 	return nil
 }
 
@@ -156,21 +157,4 @@ func (s *Scheduler) GetNextRun() time.Time {
 		return time.Time{}
 	}
 	return entries[0].Next
-}
-
-// GetStatus returns scheduler status information
-func (s *Scheduler) GetStatus() map[string]interface{} {
-	entries := s.cron.Entries()
-	var nextRun time.Time
-	if len(entries) > 0 {
-		nextRun = entries[0].Next
-	}
-
-	return map[string]interface{}{
-		"running":    len(entries) > 0,
-		"themes":     len(s.themes),
-		"jobs":       len(entries),
-		"next_run":   nextRun.Format(time.RFC3339),
-		"next_run_in": time.Until(nextRun).String(),
-	}
 }

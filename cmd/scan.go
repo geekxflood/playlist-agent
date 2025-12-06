@@ -45,7 +45,7 @@ func init() {
 	scanCmd.Flags().StringVarP(&scanSource, "source", "s", "", "specific source to scan (radarr, sonarr)")
 }
 
-func runScan(cmd *cobra.Command, args []string) error {
+func runScan(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -148,7 +148,11 @@ func getMediaStatistics(
 	if source == "radarr" {
 		movieOpts.Source = models.MediaSourceRadarr
 	}
-	stats.MovieCount, _ = mediaRepo.Count(ctx, movieOpts)
+	var err error
+	stats.MovieCount, err = mediaRepo.Count(ctx, movieOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count movies: %w", err)
+	}
 
 	// Count series
 	seriesOpts := repository.ListMediaOptions{
@@ -158,7 +162,10 @@ func getMediaStatistics(
 	if source == "sonarr" {
 		seriesOpts.Source = models.MediaSourceSonarr
 	}
-	stats.SeriesCount, _ = mediaRepo.Count(ctx, seriesOpts)
+	stats.SeriesCount, err = mediaRepo.Count(ctx, seriesOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count series: %w", err)
+	}
 
 	// Count anime
 	animeOpts := repository.ListMediaOptions{
@@ -168,13 +175,22 @@ func getMediaStatistics(
 	if source == "sonarr" {
 		animeOpts.Source = models.MediaSourceSonarr
 	}
-	stats.AnimeCount, _ = mediaRepo.Count(ctx, animeOpts)
+	stats.AnimeCount, err = mediaRepo.Count(ctx, animeOpts)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count anime: %w", err)
+	}
 
 	// Get play history count
-	stats.TotalPlays, _ = historyRepo.Count(ctx, repository.ListHistoryOptions{})
+	stats.TotalPlays, err = historyRepo.Count(ctx, repository.ListHistoryOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to count history: %w", err)
+	}
 
 	// Get cooldown count
-	stats.OnCooldown, _ = cooldownRepo.CountActive(ctx)
+	stats.OnCooldown, err = cooldownRepo.CountActive(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to count cooldowns: %w", err)
+	}
 
 	// Get all media for genre and rating stats
 	allMedia, err := mediaRepo.List(ctx, repository.ListMediaOptions{
@@ -282,11 +298,11 @@ func printMediaSummary(stats *MediaStatistics, detailed bool) {
 		}
 
 		// Show top 10
-		max := 10
-		if len(genres) < max {
-			max = len(genres)
+		maxGenres := 10
+		if len(genres) < maxGenres {
+			maxGenres = len(genres)
 		}
-		for i := 0; i < max; i++ {
+		for i := 0; i < maxGenres; i++ {
 			fmt.Printf("  %-20s %4d\n", genres[i].genre, genres[i].count)
 		}
 		fmt.Println()

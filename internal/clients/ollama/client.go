@@ -1,3 +1,4 @@
+// Package ollama provides a client for interacting with the Ollama LLM API.
 package ollama
 
 import (
@@ -90,21 +91,6 @@ type GenerateResponse struct {
 	Done      bool   `json:"done"`
 }
 
-// Chat performs a chat completion request
-func (c *Client) Chat(ctx context.Context, messages []ChatMessage) (*ChatResponse, error) {
-	req := ChatRequest{
-		Model:    c.model,
-		Messages: messages,
-		Stream:   false,
-		Options: Options{
-			Temperature: c.temperature,
-			NumCtx:      c.numCtx,
-		},
-	}
-
-	return c.doChat(ctx, &req)
-}
-
 // ChatWithJSON performs a chat completion request expecting JSON output
 func (c *Client) ChatWithJSON(ctx context.Context, messages []ChatMessage) (*ChatResponse, error) {
 	req := ChatRequest{
@@ -119,117 +105,6 @@ func (c *Client) ChatWithJSON(ctx context.Context, messages []ChatMessage) (*Cha
 	}
 
 	return c.doChat(ctx, &req)
-}
-
-// Generate performs a text generation request
-func (c *Client) Generate(ctx context.Context, prompt string, system string) (*GenerateResponse, error) {
-	req := GenerateRequest{
-		Model:  c.model,
-		Prompt: prompt,
-		System: system,
-		Stream: false,
-		Options: Options{
-			Temperature: c.temperature,
-			NumCtx:      c.numCtx,
-		},
-	}
-
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	httpReq, err := c.newRequest(ctx, "POST", "/api/generate", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-
-	var resp GenerateResponse
-	if err := c.do(httpReq, &resp); err != nil {
-		return nil, fmt.Errorf("failed to generate: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// GenerateWithJSON performs a text generation request expecting JSON output
-func (c *Client) GenerateWithJSON(ctx context.Context, prompt string, system string) (*GenerateResponse, error) {
-	req := GenerateRequest{
-		Model:  c.model,
-		Prompt: prompt,
-		System: system,
-		Stream: false,
-		Format: "json",
-		Options: Options{
-			Temperature: c.temperature,
-			NumCtx:      c.numCtx,
-		},
-	}
-
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
-	}
-
-	httpReq, err := c.newRequest(ctx, "POST", "/api/generate", bytes.NewReader(body))
-	if err != nil {
-		return nil, err
-	}
-
-	var resp GenerateResponse
-	if err := c.do(httpReq, &resp); err != nil {
-		return nil, fmt.Errorf("failed to generate: %w", err)
-	}
-
-	return &resp, nil
-}
-
-// ListModels lists available models
-func (c *Client) ListModels(ctx context.Context) ([]ModelInfo, error) {
-	req, err := c.newRequest(ctx, "GET", "/api/tags", nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp struct {
-		Models []ModelInfo `json:"models"`
-	}
-	if err := c.do(req, &resp); err != nil {
-		return nil, fmt.Errorf("failed to list models: %w", err)
-	}
-
-	return resp.Models, nil
-}
-
-// ModelInfo represents information about a model
-type ModelInfo struct {
-	Name       string `json:"name"`
-	ModifiedAt string `json:"modified_at"`
-	Size       int64  `json:"size"`
-	Digest     string `json:"digest"`
-}
-
-// HealthCheck verifies the Ollama connection and model availability
-func (c *Client) HealthCheck(ctx context.Context) error {
-	models, err := c.ListModels(ctx)
-	if err != nil {
-		return fmt.Errorf("ollama health check failed: %w", err)
-	}
-
-	// Check if configured model is available
-	modelFound := false
-	for _, m := range models {
-		if m.Name == c.model {
-			modelFound = true
-			break
-		}
-	}
-
-	if !modelFound {
-		return fmt.Errorf("configured model %s not found in Ollama", c.model)
-	}
-
-	return nil
 }
 
 // doChat executes a chat completion request
@@ -278,7 +153,10 @@ func (c *Client) do(req *http.Request, v interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("API error: status %d, failed to read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(body))
 	}
 

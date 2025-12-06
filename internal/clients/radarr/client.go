@@ -1,3 +1,4 @@
+// Package radarr provides a client for interacting with the Radarr API.
 package radarr
 
 import (
@@ -99,36 +100,6 @@ func (c *Client) GetMovies(ctx context.Context) ([]Movie, error) {
 	return movies, nil
 }
 
-// GetMovie retrieves a single movie by ID
-func (c *Client) GetMovie(ctx context.Context, id int64) (*Movie, error) {
-	req, err := c.newRequest(ctx, "GET", fmt.Sprintf("/api/v3/movie/%d", id), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var movie Movie
-	if err := c.do(req, &movie); err != nil {
-		return nil, fmt.Errorf("failed to get movie %d: %w", id, err)
-	}
-
-	return &movie, nil
-}
-
-// HealthCheck verifies the Radarr connection
-func (c *Client) HealthCheck(ctx context.Context) error {
-	req, err := c.newRequest(ctx, "GET", "/api/v3/system/status", nil)
-	if err != nil {
-		return err
-	}
-
-	var status map[string]interface{}
-	if err := c.do(req, &status); err != nil {
-		return fmt.Errorf("radarr health check failed: %w", err)
-	}
-
-	return nil
-}
-
 // ToMedia converts a Radarr movie to a Media model
 func (m *Movie) ToMedia() *models.Media {
 	return &models.Media{
@@ -180,7 +151,10 @@ func (c *Client) do(req *http.Request, v interface{}) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("API error: status %d, failed to read body: %w", resp.StatusCode, err)
+		}
 		return fmt.Errorf("API error: status %d, body: %s", resp.StatusCode, string(body))
 	}
 

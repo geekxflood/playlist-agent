@@ -1,3 +1,4 @@
+// Package database provides database abstraction and migration support for program-director.
 package database
 
 import (
@@ -57,13 +58,13 @@ func New(ctx context.Context, cfg *config.DatabaseConfig, logger *slog.Logger) (
 
 // loadMigrations reads all SQL migration files
 func loadMigrations(driver string) ([]Migration, error) {
-	var migrations []Migration
-
 	// Read migrations from embedded filesystem
 	entries, err := fs.ReadDir(migrationsFS, "migrations")
 	if err != nil {
 		return nil, fmt.Errorf("failed to read migrations directory: %w", err)
 	}
+
+	migrations := make([]Migration, 0, len(entries))
 
 	for _, entry := range entries {
 		if entry.IsDir() {
@@ -187,7 +188,7 @@ func getAppliedMigrations(ctx context.Context, db DB) (map[int]bool, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var version int

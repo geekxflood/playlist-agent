@@ -63,7 +63,7 @@ func init() {
 	serveCmd.Flags().BoolVar(&serveMetricsEnabled, "metrics", true, "enable prometheus metrics endpoint")
 }
 
-func runServe(cmd *cobra.Command, args []string) error {
+func runServe(_ *cobra.Command, _ []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

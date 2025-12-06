@@ -74,37 +74,6 @@ func TestNewSchedulerDefaultSchedule(t *testing.T) {
 	}
 }
 
-func TestGetStatus(t *testing.T) {
-	cfg := &Config{
-		Schedule: "0 2 * * *",
-	}
-
-	themes := []config.ThemeConfig{
-		{Name: "test-theme", ChannelID: "ch1"},
-	}
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-
-	sched, err := NewScheduler(cfg, nil, themes, logger)
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	status := sched.GetStatus()
-
-	if status == nil {
-		t.Fatal("expected non-nil status")
-	}
-
-	if themes, ok := status["themes"].(int); !ok || themes != 1 {
-		t.Errorf("expected themes count 1, got %v", status["themes"])
-	}
-
-	if jobs, ok := status["jobs"].(int); !ok || jobs != 0 {
-		t.Errorf("expected jobs count 0 (not started), got %v", status["jobs"])
-	}
-}
-
 func TestStop(t *testing.T) {
 	cfg := &Config{
 		Schedule: "0 2 * * *",

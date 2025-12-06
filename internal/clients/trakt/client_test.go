@@ -33,65 +33,6 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestGetMovie(t *testing.T) {
-	// Create test server
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Verify request headers
-		if r.Header.Get("trakt-api-version") != apiVersion {
-			t.Errorf("expected api version %s, got %s", apiVersion, r.Header.Get("trakt-api-version"))
-		}
-		if r.Header.Get("trakt-api-key") != "test-key" {
-			t.Errorf("expected api key test-key, got %s", r.Header.Get("trakt-api-key"))
-		}
-
-		// Return mock movie data
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{
-			"title": "Inception",
-			"year": 2010,
-			"ids": {
-				"trakt": 16662,
-				"slug": "inception-2010",
-				"imdb": "tt1375666",
-				"tmdb": 27205
-			},
-			"tagline": "Your mind is the scene of the crime",
-			"overview": "A thief who steals corporate secrets...",
-			"runtime": 148,
-			"genres": ["Action", "Sci-Fi"],
-			"rating": 8.8,
-			"votes": 100000
-		}`))
-	}))
-	defer server.Close()
-
-	cfg := &config.TraktConfig{ClientID: "test-key"}
-	client := New(cfg)
-	client.baseURL = server.URL
-
-	movie, err := client.GetMovie(context.Background(), "inception-2010")
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
-	}
-
-	if movie.Title != "Inception" {
-		t.Errorf("expected title Inception, got %s", movie.Title)
-	}
-
-	if movie.Year != 2010 {
-		t.Errorf("expected year 2010, got %d", movie.Year)
-	}
-
-	if movie.Rating != 8.8 {
-		t.Errorf("expected rating 8.8, got %.1f", movie.Rating)
-	}
-
-	if len(movie.Genres) != 2 {
-		t.Errorf("expected 2 genres, got %d", len(movie.Genres))
-	}
-}
-
 func TestGetTrendingMovies(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -187,7 +128,7 @@ func TestDoRequestError(t *testing.T) {
 	client := New(cfg)
 	client.baseURL = server.URL
 
-	_, err := client.GetMovie(context.Background(), "test")
+	_, err := client.Search(context.Background(), "test", 10)
 	if err == nil {
 		t.Error("expected error for 500 response, got nil")
 	}

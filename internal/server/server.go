@@ -94,7 +94,14 @@ func (s *Server) Start(ctx context.Context, port int) error {
 		return fmt.Errorf("server error: %w", err)
 	case <-ctx.Done():
 		s.logger.Info("shutting down HTTP server")
-		return s.Shutdown(context.Background())
+		// Use a timeout context derived from a fresh background context for shutdown.
+		// Note: We use context.Background() here instead of the parent context because:
+		// 1. The parent context (ctx) is already canceled/done at this point
+		// 2. Shutdown needs a fresh context with its own timeout to complete gracefully
+		// 3. This ensures the server has a full 10 seconds to shut down properly
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		return s.Shutdown(shutdownCtx)
 	}
 }
 

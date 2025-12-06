@@ -1,3 +1,4 @@
+// Package models defines data models for media, playlists, history, and cooldowns.
 package models
 
 import (
@@ -8,6 +9,7 @@ import (
 // MediaType represents the type of media
 type MediaType string
 
+// Media type constants
 const (
 	MediaTypeMovie  MediaType = "movie"
 	MediaTypeSeries MediaType = "series"
@@ -17,6 +19,7 @@ const (
 // MediaSource represents where the media metadata came from
 type MediaSource string
 
+// Media source constants
 const (
 	MediaSourceRadarr MediaSource = "radarr"
 	MediaSourceSonarr MediaSource = "sonarr"
