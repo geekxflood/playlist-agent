@@ -3,7 +3,8 @@
 replicaCount: 1
 
 image:
-  pullPolicy: Always  # Always pull latest for staging
+  tag: "1.0.2"  # Using release v1.0.2 with workflow fix
+  pullPolicy: IfNotPresent
 
 ## Temporarily disable readOnlyRootFilesystem for SQLite debugging
 securityContext:
