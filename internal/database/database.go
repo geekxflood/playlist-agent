@@ -133,11 +133,23 @@ func adaptSQL(sql string, driver string) string {
 		// Convert BIGINT to INTEGER for SQLite (SQLite uses INTEGER for all int types)
 		sql = strings.ReplaceAll(sql, "BIGINT", "INTEGER")
 
-		// Remove IF NOT EXISTS from CREATE INDEX (SQLite supports it differently)
-		// Actually SQLite does support IF NOT EXISTS, so we're good
-
-		// Convert timestamp defaults
-		sql = strings.ReplaceAll(sql, "CURRENT_TIMESTAMP", "CURRENT_TIMESTAMP")
+		// Remove partial indexes with WHERE clauses containing CURRENT_TIMESTAMP
+		// SQLite doesn't allow non-deterministic functions in partial index WHERE clauses
+		// We need to handle multi-line CREATE INDEX statements
+		// Strategy: Remove entire CREATE INDEX ... WHERE ... CURRENT_TIMESTAMP; statements
+		statements := strings.Split(sql, ";")
+		var filteredStatements []string
+		for _, stmt := range statements {
+			// Check if this statement is a CREATE INDEX with WHERE CURRENT_TIMESTAMP
+			if strings.Contains(stmt, "CREATE INDEX") &&
+			   strings.Contains(stmt, "WHERE") &&
+			   strings.Contains(stmt, "CURRENT_TIMESTAMP") {
+				// Skip this statement - it's a partial index with CURRENT_TIMESTAMP
+				continue
+			}
+			filteredStatements = append(filteredStatements, stmt)
+		}
+		sql = strings.Join(filteredStatements, ";")
 	}
 	return sql
 }

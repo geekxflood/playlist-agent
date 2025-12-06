@@ -3,7 +3,7 @@
 replicaCount: 1
 
 image:
-  tag: "1.0.2"  # Using release v1.0.2 with workflow fix
+  tag: "1.0.3"  # Using release v1.0.3 with SQLite migration fix
   pullPolicy: IfNotPresent
 
 ## Temporarily disable readOnlyRootFilesystem for SQLite debugging

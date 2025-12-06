@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+## [1.0.3] - 2025-12-06
+
+### Fixed
+- Fixed SQLite migration error with partial indexes containing CURRENT_TIMESTAMP in WHERE clauses
+- Remove non-deterministic function usage in SQLite partial indexes
+
 ## [1.0.2] - 2025-12-06
 
 ### Fixed
@@ -200,7 +206,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Previous Python-based versions are no longer maintained. See git history for details.
 
-[Unreleased]: https://github.com/geekxflood/program-director/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/geekxflood/program-director/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/geekxflood/program-director/releases/tag/v1.0.3
 [1.0.2]: https://github.com/geekxflood/program-director/releases/tag/v1.0.2
 [1.0.1]: https://github.com/geekxflood/program-director/releases/tag/v1.0.1
 [1.0.0]: https://github.com/geekxflood/program-director/releases/tag/v1.0.0
